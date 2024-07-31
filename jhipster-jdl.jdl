@@ -1,0 +1,104 @@
+application {
+  config {
+    baseName velopoubelle
+    applicationType monolith
+    authenticationType jwt
+    databaseType sql
+    devDatabaseType h2Disk
+    prodDatabaseType mysql
+    buildTool maven
+    clientFramework angular
+    enableHibernateCache false
+    packageName com.limayrac.velopoubelle
+  }
+}
+
+entity Utilisateur {
+    IdUtilisateur Long,
+    Nom String,
+    Prenom String,
+    Email String required unique,
+    MotDePasse String required,
+    Role RoleType required
+}
+
+enum RoleType {
+    Cycliste, Gestionnaire, RH, Administrateur
+}
+
+entity Velo {
+    IdVelo Long,
+    Autonomie Integer,
+    Capacite Integer,
+    Etat VeloEtat
+}
+
+enum VeloEtat {
+    Disponible, EnMaintenance, HorsService
+} 
+
+entity Rue {
+    IdRue Long,
+    Nom String required unique,
+    Longueur Integer
+}
+
+entity Arret {
+    IdArret Long,
+    Position Point,  // Assuming you have a Point class to represent coordinates
+    Type ArretType
+}
+
+enum ArretType {
+    Decheterie, Recyclage, Compostage
+}
+
+entity Tournee {
+    IdTournee Long,
+    Date LocalDate,
+    HeureDebut LocalTime,
+    HeureFin LocalTime
+}
+
+entity Incident {
+    IdIncident Long,
+    Type IncidentType,
+    Date LocalDate,
+    Heure LocalTime,
+    Lieu Point,  // Assuming you have a Point class to represent coordinates
+    Description String
+}
+
+enum IncidentType {
+    PanneVelo, Accident, Autre
+}
+
+// Entité de liaison pour la relation ManyToMany entre Tournee et Arret
+entity TourneeArret {
+    Id Long,  // Ajout d'une clé primaire
+    OrdrePassage Integer,
+    HeureEstimee LocalTime
+}
+
+relationship OneToOne {
+    Tournee{velo} to Velo
+    Tournee{cycliste} to Utilisateur
+    Incident{veloConcerne} to Velo
+}
+
+relationship ManyToOne {
+    TourneeArret{tournee} to Tournee
+    TourneeArret{arret} to Arret
+}
+
+relationship ManyToMany {
+    Rue to Arret
+}
+
+paginate Utilisateur with pagination
+paginate Velo with pagination
+paginate Rue with pagination
+paginate Arret with pagination
+paginate Tournee with pagination
+paginate Incident with pagination
+paginate TourneeArret with pagination

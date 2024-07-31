@@ -1,0 +1,21 @@
+{
+  "generator-jhipster": {
+    "applicationType": "monolith",
+    "authenticationType": "jwt",
+    "baseName": "velopoubelle",
+    "buildTool": "maven",
+    "clientFramework": "angular",
+    "databaseType": "sql",
+    "devDatabaseType": "h2Disk",
+    "devServerPort": 4200,
+    "enableHibernateCache": false,
+    "entities": [],
+    "jhipsterVersion": "8.6.0",
+    "jwtSecretKey": "NzUwZTdhODk3NzFhZjU5YWE3MTBmNDhiNWQ1ZWFlNGNmZDI4YjBmMWRlYTM1ZDRkZWRkYmIxYzRkNDY4ODU1NGIxZWMyMzg3Mzg1ZDFiNjk2YWU2Yzg5ZTM3NGJhMzJlZTlmNTA3ZTk2ZTEwZjVmNmJiMjJhMTIyZjhiYTFhNDE=",
+    "languages": ["en"],
+    "nativeLanguage": "en",
+    "packageFolder": "com/limayrac/velopoubelle",
+    "packageName": "com.limayrac.velopoubelle",
+    "prodDatabaseType": "mysql"
+  }
+}
