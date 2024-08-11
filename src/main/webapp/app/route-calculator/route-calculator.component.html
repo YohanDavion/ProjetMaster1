@@ -1,0 +1,20 @@
+<div>
+  <label for="start">Point de départ :</label>
+  <select id="start" [(ngModel)]="startPoint">
+    <option *ngFor="let point of pointsInteret" [ngValue]="point">{{ point.name }}</option>
+  </select>
+</div>
+
+<div>
+  <label for="end">Point d'arrivée :</label>
+  <select id="end" [(ngModel)]="endPoint">
+    <option *ngFor="let point of pointsInteret" [ngValue]="point">{{ point.name }}</option>
+  </select>
+</div>
+
+<button (click)="calculateRoute(startPoint!, endPoint!)">Calculer le trajet</button>
+
+<!-- Bouton pour basculer l'affichage des routes grises -->
+<button (click)="toggleRoadsVisibility()">{{ roadsVisible ? 'Masquer' : 'Afficher' }} les routes grises</button>
+
+<div id="map" style="height: 800px; margin-top: 10px"></div>

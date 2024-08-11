@@ -29,18 +29,29 @@ export class MapComponent implements OnInit {
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      opacity: 0.7, // Adjust the opacity for transparency
+      opacity: 0.7,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(this.map);
   }
 
   private addMarkers(): void {
     this.pointsInteret.forEach(point => {
-      const marker = L.circleMarker([point.lat, point.lng], {
-        radius: 5, // Reduced radius for smaller markers
+      let markerOptions: L.CircleMarkerOptions = {
+        radius: 5, // Default radius for markers
         color: 'red',
         fillOpacity: 0.5,
-      }).addTo(this.map);
+      };
+
+      // Special style for "Porte d’Ivry"
+      if (point.name === "Porte d'Ivry") {
+        markerOptions = {
+          radius: 10, // Larger radius for emphasis
+          color: 'green', // Different color for emphasis
+          fillOpacity: 0.8,
+        };
+      }
+
+      const marker = L.circleMarker([point.lat, point.lng], markerOptions).addTo(this.map);
 
       marker.bindPopup(`<b>${point.name}</b><br>Cliquez pour plus de détails.`);
 
