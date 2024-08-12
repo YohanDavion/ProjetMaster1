@@ -19,6 +19,7 @@
     </a>
     <div class="navbar-collapse collapse" id="navbarResponsive" [ngbCollapse]="isNavbarCollapsed()">
       <ul class="navbar-nav ms-auto">
+        <!-- Home Link -->
         <li class="nav-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
           <a class="nav-link" routerLink="/" (click)="collapseNavbar()">
             <span>
@@ -27,6 +28,27 @@
             </span>
           </a>
         </li>
+
+        <!-- Map Link -->
+        <li class="nav-item" routerLinkActive="active">
+          <a class="nav-link" routerLink="/map" (click)="collapseNavbar()">
+            <span>
+              <fa-icon icon="map"></fa-icon>
+              <span>Map</span>
+            </span>
+          </a>
+        </li>
+
+        <!-- Calculer Trajet Link -->
+        <li class="nav-item" routerLinkActive="active">
+          <a class="nav-link" routerLink="/calculer-trajet" (click)="collapseNavbar()">
+            <span>
+              <fa-icon icon="route"></fa-icon>
+              <span>Calculer Trajet</span>
+            </span>
+          </a>
+        </li>
+
         <!-- jhipster-needle-add-element-to-menu - JHipster will add new menu items here -->
         @if (account() !== null) {
           <li

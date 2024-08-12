@@ -4,11 +4,15 @@
       <span class="hipster img-fluid rounded"></span>
     </div>
 
-    <div class="col-md-8">
+    <div class="col-md-12">
       <h1 jhiTranslate="error.title">Error page!</h1>
 
       @if (errorMessage()) {
-        <div class="alert alert-danger">{{ errorMessage() }}</div>
+        <div class="alert alert-danger">
+          {{ errorMessage() }}
+          <br />
+          <img src="/content/images/404.png" style="width: 1100px" />
+        </div>
       }
     </div>
   </div>
