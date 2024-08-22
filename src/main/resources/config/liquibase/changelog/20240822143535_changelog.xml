@@ -1,0 +1,62 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="mawer (generated)" id="1724337340716-1">
+        <createTable tableName="jhi_authority">
+            <column name="name" type="varchar(50)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="jhi_authorityPK"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="mawer (generated)" id="1724337340716-2">
+        <createTable tableName="jhi_user">
+            <column autoIncrement="true" name="id" type="bigint">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="jhi_userPK"/>
+            </column>
+            <column name="created_by" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="datetimeoffset(6)"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="datetimeoffset(6)"/>
+            <column name="activated" type="bit">
+                <constraints nullable="false"/>
+            </column>
+            <column name="activation_key" type="varchar(20)"/>
+            <column name="email" type="varchar(254)"/>
+            <column name="first_name" type="varchar(50)"/>
+            <column name="image_url" type="varchar(256)"/>
+            <column name="lang_key" type="varchar(10)"/>
+            <column name="last_name" type="varchar(50)"/>
+            <column name="login" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="password_hash" type="varchar(60)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reset_date" type="datetimeoffset(6)"/>
+            <column name="reset_key" type="varchar(20)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="mawer (generated)" id="1724337340716-3">
+        <createTable tableName="jhi_user_authority">
+            <column name="user_id" type="bigint">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="jhi_user_authorityPK"/>
+            </column>
+            <column name="authority_name" type="varchar(50)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="jhi_user_authorityPK"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="mawer (generated)" id="1724337340716-4">
+        <addUniqueConstraint columnNames="email" constraintName="UC_JHI_USEREMAIL_COL" tableName="jhi_user"/>
+    </changeSet>
+    <changeSet author="mawer (generated)" id="1724337340716-5">
+        <addUniqueConstraint columnNames="login" constraintName="UC_JHI_USERLOGIN_COL" tableName="jhi_user"/>
+    </changeSet>
+    <changeSet author="mawer (generated)" id="1724337340716-6">
+        <addForeignKeyConstraint baseColumnNames="user_id" baseTableName="jhi_user_authority" constraintName="FK290okww5jujghp4el5i7mgwu0" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="jhi_user" validate="true"/>
+    </changeSet>
+    <changeSet author="mawer (generated)" id="1724337340716-7">
+        <addForeignKeyConstraint baseColumnNames="authority_name" baseTableName="jhi_user_authority" constraintName="FK4psxl0jtx6nr7rhqbynr6itoc" deferrable="false" initiallyDeferred="false" referencedColumnNames="name" referencedTableName="jhi_authority" validate="true"/>
+    </changeSet>
+</databaseChangeLog>

@@ -32,14 +32,9 @@ spring:
       indent-output: true
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:sqlserver://banque.database.windows.net:1433;database=projetMaster1;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
-    username: yohan.davion@banque
-    password: R9awQCHk%J
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-    cachePrepStmts: true
-    prepStmtCacheSize: 250
-    prepStmtCacheSqlLimit: 2048
-    useServerPrepStmts: true
+    url: jdbc:h2:file:./target/h2db/db/velopoubelle;DB_CLOSE_DELAY=-1;MODE=MYSQL
+    username: velopoubelle
+    password:
     hikari:
       poolName: Hikari
       auto-commit: false
@@ -48,8 +43,8 @@ spring:
       # disable spring boot built-in h2-console since we start it manually with correct configuration
       enabled: false
   liquibase:
-    enabled: true
-    contexts: dev
+    # Remove 'faker' if you do not want the sample data to be loaded automatically
+    contexts: dev, faker
   mail:
     host: localhost
     port: 25

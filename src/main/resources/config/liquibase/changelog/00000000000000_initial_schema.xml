@@ -3,14 +3,15 @@
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
-                        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd
+    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
 
-    <!--
-        JHipster core tables.
-        The initial schema has the '00000000000001' id, so that it is over-written if we re-generate it.
-    -->
-    <changeSet id="00000000000001" author="jhipster">
+    <property name="now" value="now()" dbms="mysql,h2"/>
+    <property name="now" value="current_timestamp" dbms="postgresql"/>
+    <property name="now" value="GETDATE()" dbms="mssql"/>
+
+    <changeSet id="00000000000000" author="jhipster" dbms="postgresql">
+    	<createSequence sequenceName="hibernate_sequence" startValue="1000" incrementBy="1"/>
         <createTable tableName="jhi_user">
             <column name="id" type="bigint" autoIncrement="true" startWith="1050">
                 <constraints primaryKey="true" nullable="false"/>
@@ -74,28 +75,26 @@
         <addNotNullConstraint   columnName="password_hash"
                                 columnDataType="varchar(60)"
                                 tableName="jhi_user"/>
-        <loadData
-                  file="config/liquibase/data/authority.csv"
-                  separator=";"
-                  tableName="jhi_authority"
-                  usePreparedStatements="true">
-            <column name="name" type="string"/>
-        </loadData>
-        <loadData
-                  file="config/liquibase/data/user.csv"
-                  separator=";"
-                  tableName="jhi_user"
-                  usePreparedStatements="true">
-            <column name="activated" type="boolean"/>
-            <column name="created_date" type="timestamp"/>
-        </loadData>
-        <loadData
-                  file="config/liquibase/data/user_authority.csv"
-                  separator=";"
-                  tableName="jhi_user_authority"
-                  usePreparedStatements="true">
-            <column name="user_id" type="numeric"/>
-        </loadData>
+        <ext:loadData encoding="UTF-8"
+          file="config/liquibase/users.csv"
+          separator=";"
+          tableName="JHI_USER" identityInsertEnabled="true">
+    <column name="activated" type="boolean"/>
+    <column name="created_date" type="timestamp"/>
+</ext:loadData>
+<dropDefaultValue tableName="JHI_USER" columnName="created_date" columnDataType="datetime"/>
+
+<ext:loadData encoding="UTF-8"
+              file="config/liquibase/authorities.csv"
+              separator=";"
+              tableName="JHI_AUTHORITY"
+              identityInsertEnabled="true" />
+
+<ext:loadData encoding="UTF-8"
+              file="config/liquibase/users_authorities.csv"
+              separator=";"
+              tableName="JHI_USER_AUTHORITY"
+              identityInsertEnabled="true" />
         <dropDefaultValue tableName="jhi_user" columnName="created_date" columnDataType="${datetimeType}"/>
     </changeSet>
 

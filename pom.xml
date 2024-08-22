@@ -267,6 +267,16 @@
             <version>${liquibase.version}</version>
         </dependency>
         <dependency>
+    		<groupId>mysql</groupId>
+   			<artifactId>mysql-connector-java</artifactId>
+   			<version>8.0.33</version>
+		</dependency>
+	<dependency>
+    <groupId>com.microsoft.sqlserver</groupId>
+    <artifactId>mssql-jdbc</artifactId>
+    <version>latest_version</version>
+</dependency>	
+        <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
             <version>${mapstruct.version}</version>
@@ -282,6 +292,11 @@
             <artifactId>jdbc</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+   			 <groupId>com.microsoft.sqlserver</groupId>
+  			  <artifactId>mssql-jdbc</artifactId>
+  			  <scope>runtime</scope>
+		</dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -817,11 +832,11 @@
                 <!-- default Spring profiles -->
                 <spring.profiles.active>dev${profile.tls}${profile.no-liquibase}</spring.profiles.active>
                 <profile.test>testdev</profile.test>
-                <liquibase-plugin.hibernate-dialect>org.hibernate.dialect.H2Dialect</liquibase-plugin.hibernate-dialect>
-                <liquibase-plugin.driver>org.h2.Driver</liquibase-plugin.driver>
-                <liquibase-plugin.url>jdbc:h2:file:${project.build.directory}/h2db/db/velopoubelle</liquibase-plugin.url>
-                <liquibase-plugin.username>velopoubelle</liquibase-plugin.username>
-                <liquibase-plugin.password/>
+                <liquibase-plugin.hibernate-dialect>org.hibernate.dialect.SQLServerDialect</liquibase-plugin.hibernate-dialect>
+                <liquibase-plugin.driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</liquibase-plugin.driver>
+                <liquibase-plugin.url>jdbc:sqlserver://banque.database.windows.net:1433;database=projetMaster1;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;</liquibase-plugin.url>
+				<liquibase-plugin.username>yohan.davion@banque</liquibase-plugin.username>
+				<liquibase-plugin.password>R9awQCHk%J</liquibase-plugin.password>
             </properties>
             <dependencies>
                 <dependency>
@@ -944,11 +959,11 @@
                 <!-- default Spring profiles -->
                 <spring.profiles.active>prod${profile.api-docs}${profile.tls}${profile.e2e}${profile.no-liquibase}</spring.profiles.active>
                 <profile.test>testprod</profile.test>
-                <liquibase-plugin.hibernate-dialect>org.hibernate.dialect.MySQL8Dialect</liquibase-plugin.hibernate-dialect>
-                <liquibase-plugin.driver>com.mysql.cj.jdbc.Driver</liquibase-plugin.driver>
-                <liquibase-plugin.url>jdbc:mysql://localhost:3306/velopoubelle</liquibase-plugin.url>
-                <liquibase-plugin.username>root</liquibase-plugin.username>
-                <liquibase-plugin.password/>
+                <liquibase-plugin.hibernate-dialect>org.hibernate.dialect.SQLServerDialect</liquibase-plugin.hibernate-dialect>
+                <liquibase-plugin.driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</liquibase-plugin.driver>
+                <liquibase-plugin.url>jdbc:sqlserver://banque.database.windows.net:1433;database=projetMaster1;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;</liquibase-plugin.url>
+				<liquibase-plugin.username>yohan.davion@banque</liquibase-plugin.username>
+				<liquibase-plugin.password>R9awQCHk%J</liquibase-plugin.password>
             </properties>
             <build>
                 <plugins>
