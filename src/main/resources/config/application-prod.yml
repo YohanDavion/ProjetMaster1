@@ -33,9 +33,9 @@ spring:
       enabled: false
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:mysql://localhost:3306/velopoubelle?useUnicode=true&characterEncoding=utf8&useSSL=false&useLegacyDatetimeCode=false&createDatabaseIfNotExist=true
-    username: root
-    password:
+    url: jdbc:mysql://sql7.freesqldatabase.com:3306/sql7728703
+    username: sql7728703
+    password: YX5ix54ViM
     hikari:
       poolName: Hikari
       auto-commit: false
@@ -46,7 +46,7 @@ spring:
         useServerPrepStmts: true
   # Replace by 'prod, faker' to add the faker context and have sample data loaded in production
   liquibase:
-    contexts: prod
+    contexts: prod, faker
   mail:
     host: localhost
     port: 25

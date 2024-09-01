@@ -32,14 +32,9 @@ spring:
       indent-output: true
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:sqlserver://banque.database.windows.net:1433;database=projetMaster1;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
-    username: yohan.davion@banque
-    password: R9awQCHk%J
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-    cachePrepStmts: true
-    prepStmtCacheSize: 250
-    prepStmtCacheSqlLimit: 2048
-    useServerPrepStmts: true
+    url: jdbc:mysql://sql7.freesqldatabase.com:3306/sql7728703
+    username: sql7728703
+    password: YX5ix54ViM
     hikari:
       poolName: Hikari
       auto-commit: false
@@ -49,7 +44,7 @@ spring:
       enabled: false
   liquibase:
     enabled: true
-    contexts: dev
+    contexts: dev, faker
   mail:
     host: localhost
     port: 25

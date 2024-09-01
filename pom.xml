@@ -832,11 +832,11 @@
                 <!-- default Spring profiles -->
                 <spring.profiles.active>dev${profile.tls}${profile.no-liquibase}</spring.profiles.active>
                 <profile.test>testdev</profile.test>
-                <liquibase-plugin.hibernate-dialect>org.hibernate.dialect.SQLServerDialect</liquibase-plugin.hibernate-dialect>
-                <liquibase-plugin.driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</liquibase-plugin.driver>
-                <liquibase-plugin.url>jdbc:sqlserver://banque.database.windows.net:1433;database=projetMaster1;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;</liquibase-plugin.url>
-				<liquibase-plugin.username>yohan.davion@banque</liquibase-plugin.username>
-				<liquibase-plugin.password>R9awQCHk%J</liquibase-plugin.password>
+                <liquibase-plugin.hibernate-dialect>org.hibernate.dialect.MySQL8Dialect</liquibase-plugin.hibernate-dialect>
+                <liquibase-plugin.driver>com.mysql.cj.jdbc.Driver</liquibase-plugin.driver>
+                <liquibase-plugin.url>jdbc:mysql://sql7.freesqldatabase.com:3306/sql7728703</liquibase-plugin.url>
+				<liquibase-plugin.username>sql7728703</liquibase-plugin.username>
+				<liquibase-plugin.password>YX5ix54ViM</liquibase-plugin.password>
             </properties>
             <dependencies>
                 <dependency>
@@ -959,11 +959,11 @@
                 <!-- default Spring profiles -->
                 <spring.profiles.active>prod${profile.api-docs}${profile.tls}${profile.e2e}${profile.no-liquibase}</spring.profiles.active>
                 <profile.test>testprod</profile.test>
-                <liquibase-plugin.hibernate-dialect>org.hibernate.dialect.SQLServerDialect</liquibase-plugin.hibernate-dialect>
-                <liquibase-plugin.driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</liquibase-plugin.driver>
-                <liquibase-plugin.url>jdbc:sqlserver://banque.database.windows.net:1433;database=projetMaster1;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;</liquibase-plugin.url>
-				<liquibase-plugin.username>yohan.davion@banque</liquibase-plugin.username>
-				<liquibase-plugin.password>R9awQCHk%J</liquibase-plugin.password>
+                 <liquibase-plugin.hibernate-dialect>org.hibernate.dialect.MySQL8Dialect</liquibase-plugin.hibernate-dialect>
+                <liquibase-plugin.driver>com.mysql.cj.jdbc.Driver</liquibase-plugin.driver>
+                <liquibase-plugin.url>jdbc:mysql://sql7.freesqldatabase.com:3306/sql7728703</liquibase-plugin.url>
+				<liquibase-plugin.username>sql7728703</liquibase-plugin.username>
+				<liquibase-plugin.password>YX5ix54ViM</liquibase-plugin.password>
             </properties>
             <build>
                 <plugins>
