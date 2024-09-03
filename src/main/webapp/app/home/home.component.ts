@@ -15,12 +15,29 @@ import { Account } from 'app/core/auth/account.model';
   imports: [SharedModule, RouterModule],
 })
 export default class HomeComponent implements OnInit, OnDestroy {
+  //Les données sont marquées en dur mais tqt je fais les appels back plus tard
+  avancementTourne: number = 75;
+
+  flotteVelos = {
+    circulation: 120,
+    horsCirculation: 30,
+  };
+
+  incidents = {
+    accidentCorporel: 2,
+    arretSupprime: 5,
+    casseVelo: 3,
+    arretBloque: 1,
+    batterieVide: 4,
+  };
   account = signal<Account | null>(null);
 
   private readonly destroy$ = new Subject<void>();
 
   private accountService = inject(AccountService);
   private router = inject(Router);
+
+  constructor() {}
 
   ngOnInit(): void {
     this.accountService
@@ -36,5 +53,15 @@ export default class HomeComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  modifierFlotte(): void {
+    console.log('Modifier la flotte des vélos.');
+    // Ici, vous pouvez ajouter la logique pour modifier les données de la flotte de vélos.
+  }
+
+  modifierIncident(type: string): void {
+    console.log(`Modifier l'incident de type: ${type}`);
+    // Ici, vous pouvez ajouter la logique pour modifier les incidents.
   }
 }

@@ -1,7 +1,3 @@
-/* ==========================================================================
-Main page styles
-========================================================================== */
-
 .hipster {
   display: inline-block;
   width: 347px;
@@ -19,5 +15,58 @@ Main page styles
   .hipster {
     background: url('../../content/images/jhipster_family_member_2.svg') no-repeat center top;
     background-size: contain;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .progress-block,
+  .flotte-velos-block,
+  .incidents-block {
+    border: 1px solid #ddd;
+    padding: 20px;
+    border-radius: 5px;
+  }
+
+  .progress-bar-container {
+    background-color: #f3f3f3;
+    border-radius: 5px;
+    overflow: hidden;
+    height: 20px;
+    margin-bottom: 10px;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background-color: #4caf50;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+  }
+
+  button {
+    margin-top: 10px;
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background-color: #0056b3;
   }
 }
