@@ -36,6 +36,8 @@
               "src/main/webapp/robots.txt"
             ],
             "styles": [
+              "node_modules/primeng/resources/themes/lara-light-blue/theme.css",
+              "node_modules/primeng/resources/primeng.min.css",
               "src/main/webapp/content/scss/vendor.scss",
               "src/main/webapp/content/scss/global.scss",
               "node_modules/leaflet/dist/leaflet.css"
