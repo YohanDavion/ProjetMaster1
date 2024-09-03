@@ -1,55 +1,25 @@
 <div class="container">
-  <!-- Bloc Avancement Tourné -->
-  <div class="progress-block">
-    <h2>Avancement Tourné</h2>
-    <div class="progress-bar-container">
-      <div class="progress-bar" [style.width]="avancementTourne + '%'"></div>
-    </div>
-    <p>{{ avancementTourne }}%</p>
-  </div>
-
-  <!-- Tableau Flotte Vélos -->
-  <div class="flotte-velos-block">
-    <h2>Flotte Vélos</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Vélo en Circulation</th>
-          <th>Vélo Hors-Circulation</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>{{ flotteVelos.circulation }}</td>
-          <td>{{ flotteVelos.horsCirculation }}</td>
-        </tr>
-      </tbody>
-    </table>
-    <button (click)="modifierFlotte()">Modifier</button>
-  </div>
-
-  <!-- Tableau Incidents -->
-  <div class="incidents-block">
-    <h2>Incidents</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Accident Corporel</th>
-          <th>Arrêt Supprimé</th>
-          <th>Casse Vélo</th>
-          <th>Arrêt Bloqué</th>
-          <th>Batterie Vide</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>{{ incidents.accidentCorporel }} <button (click)="modifierIncident('accidentCorporel')">Modifier</button></td>
-          <td>{{ incidents.arretSupprime }} <button (click)="modifierIncident('arretSupprime')">Modifier</button></td>
-          <td>{{ incidents.casseVelo }} <button (click)="modifierIncident('casseVelo')">Modifier</button></td>
-          <td>{{ incidents.arretBloque }} <button (click)="modifierIncident('arretBloque')">Modifier</button></td>
-          <td>{{ incidents.batterieVide }} <button (click)="modifierIncident('batterieVide')">Modifier</button></td>
-        </tr>
-      </tbody>
-    </table>
+  <h1>DashBoard Gestionnaire Réseau</h1>
+  <div style="display: flex">
+    <p-card>
+      <i class="pi pi-users" style="font-size: 2rem; margin-right: 15px"></i>
+      <label>Vélo en Circulation : {{ this.nbVeloCirculation }}</label>
+      <p-button label="Gérer" />
+    </p-card>
+    <p-card>
+      <i class="pi pi-folder-open" style="font-size: 2rem; margin-right: 15px"></i>
+      <label>Vélo Hors-Circulation : {{ this.nbVeloHorsCirculation }}</label>
+      <p-button label="Gérer" />
+    </p-card>
+    <p-card>
+      <i class="pi pi-euro" style="font-size: 2rem; margin-right: 15px"></i>
+      <label>Incidents : {{ this.nbIncident }}</label>
+      <p-button severity="warning" label="Gérer" />
+    </p-card>
+    <p-card>
+      <i class="pi pi-arrow-right-arrow-left" style="font-size: 2rem; margin-right: 15px"></i>
+      <label>Avancement Tourné : {{ this.nbPourcentAvancementTourne }} %</label>
+      <p-button severity="info" label="Infos" />
+    </p-card>
   </div>
 </div>

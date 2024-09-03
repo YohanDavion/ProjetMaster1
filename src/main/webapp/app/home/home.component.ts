@@ -6,30 +6,23 @@ import { takeUntil } from 'rxjs/operators';
 import SharedModule from 'app/shared/shared.module';
 import { AccountService } from 'app/core/auth/account.service';
 import { Account } from 'app/core/auth/account.model';
+import { CardModule } from 'primeng/card';
+import { ButtonModule } from 'primeng/button';
 
 @Component({
   standalone: true,
   selector: 'jhi-home',
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
-  imports: [SharedModule, RouterModule],
+  imports: [SharedModule, RouterModule, CardModule, ButtonModule],
 })
 export default class HomeComponent implements OnInit, OnDestroy {
-  //Les données sont marquées en dur mais tqt je fais les appels back plus tard
-  avancementTourne: number = 75;
+  // fausses données
+  nbVeloCirculation: any = 10;
+  nbVeloHorsCirculation: any = 2;
+  nbIncident: any = 6;
+  nbPourcentAvancementTourne: any = 12;
 
-  flotteVelos = {
-    circulation: 120,
-    horsCirculation: 30,
-  };
-
-  incidents = {
-    accidentCorporel: 2,
-    arretSupprime: 5,
-    casseVelo: 3,
-    arretBloque: 1,
-    batterieVide: 4,
-  };
   account = signal<Account | null>(null);
 
   private readonly destroy$ = new Subject<void>();
@@ -53,15 +46,5 @@ export default class HomeComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  modifierFlotte(): void {
-    console.log('Modifier la flotte des vélos.');
-    // Ici, vous pouvez ajouter la logique pour modifier les données de la flotte de vélos.
-  }
-
-  modifierIncident(type: string): void {
-    console.log(`Modifier l'incident de type: ${type}`);
-    // Ici, vous pouvez ajouter la logique pour modifier les incidents.
   }
 }
