@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 
@@ -13,30 +13,32 @@ import { ProfileService } from 'app/layouts/profiles/profile.service';
 import { EntityNavbarItems } from 'app/entities/entity-navbar-items';
 import ActiveMenuDirective from './active-menu.directive';
 import NavbarItem from './navbar-item.model';
+import { Account } from 'app/core/auth/account.model';
 
 @Component({
   standalone: true,
   selector: 'jhi-navbar',
   templateUrl: './navbar.component.html',
-  styleUrl: './navbar.component.scss',
-  imports: [RouterModule, SharedModule, HasAnyAuthorityDirective, ActiveMenuDirective],
+  styleUrls: ['./navbar.component.scss'],
+  imports: [SharedModule, HasAnyAuthorityDirective, ActiveMenuDirective, RouterModule],
 })
 export default class NavbarComponent implements OnInit {
   inProduction?: boolean;
-  isNavbarCollapsed = signal(true);
+  isNavbarCollapsed = true; // Utilisation d'une propriété booléenne
   languages = LANGUAGES;
   openAPIEnabled?: boolean;
   version = '';
-  account = inject(AccountService).trackCurrentAccount();
+  account: Account | null = null;
   entitiesNavbarItems: NavbarItem[] = [];
 
-  private loginService = inject(LoginService);
-  private translateService = inject(TranslateService);
-  private stateStorageService = inject(StateStorageService);
-  private profileService = inject(ProfileService);
-  private router = inject(Router);
-
-  constructor() {
+  constructor(
+    private loginService: LoginService,
+    private translateService: TranslateService,
+    private stateStorageService: StateStorageService,
+    private profileService: ProfileService,
+    private accountService: AccountService,
+    private router: Router,
+  ) {
     if (VERSION) {
       this.version = VERSION.toLowerCase().startsWith('v') ? VERSION : `v${VERSION}`;
     }
@@ -44,9 +46,14 @@ export default class NavbarComponent implements OnInit {
 
   ngOnInit(): void {
     this.entitiesNavbarItems = EntityNavbarItems;
+
     this.profileService.getProfileInfo().subscribe(profileInfo => {
       this.inProduction = profileInfo.inProduction;
       this.openAPIEnabled = profileInfo.openAPIEnabled;
+    });
+
+    this.accountService.getAuthenticationState().subscribe(account => {
+      this.account = account;
     });
   }
 
@@ -56,7 +63,11 @@ export default class NavbarComponent implements OnInit {
   }
 
   collapseNavbar(): void {
-    this.isNavbarCollapsed.set(true);
+    this.isNavbarCollapsed = true;
+  }
+
+  toggleNavbar(): void {
+    this.isNavbarCollapsed = !this.isNavbarCollapsed;
   }
 
   login(): void {
@@ -69,7 +80,8 @@ export default class NavbarComponent implements OnInit {
     this.router.navigate(['']);
   }
 
-  toggleNavbar(): void {
-    this.isNavbarCollapsed.update(isNavbarCollapsed => !isNavbarCollapsed);
+  // Méthode pour suivre la langue dans la boucle ngFor
+  trackByFn(index: number, item: any): number {
+    return index;
   }
 }

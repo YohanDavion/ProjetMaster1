@@ -5,6 +5,7 @@ import { FaIconLibrary } from '@fortawesome/angular-fontawesome';
 import { NgbDatepickerConfig } from '@ng-bootstrap/ng-bootstrap';
 import locale from '@angular/common/locales/en';
 import { FormsModule } from '@angular/forms'; // Importer FormsModule
+import { CommonModule } from '@angular/common';
 
 import { ApplicationConfigService } from 'app/core/config/application-config.service';
 import { fontAwesomeIcons } from './config/font-awesome-icons';
@@ -16,7 +17,8 @@ import MainComponent from './layouts/main/main.component';
   template: '<jhi-main></jhi-main>',
   imports: [
     MainComponent,
-    FormsModule, // Ajouter FormsModule ici
+    FormsModule,
+    CommonModule, // Ajouter FormsModule ici
     // jhipster-needle-angular-add-module JHipster will add new module here
   ],
 })

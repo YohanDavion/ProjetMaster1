@@ -28,7 +28,13 @@ export default class LoginComponent implements OnInit, AfterViewInit {
   private router = inject(Router);
 
   ngOnInit(): void {
-    // if already authenticated then navigate to home page
+    // Capture the last URL the user visited before login
+    const lastVisitedUrl = this.router.routerState.snapshot.url;
+    if (lastVisitedUrl && lastVisitedUrl !== '/login') {
+      sessionStorage.setItem('lastVisitedUrl', lastVisitedUrl);
+    }
+
+    // If already authenticated then navigate to home page
     this.accountService.identity().subscribe(() => {
       if (this.accountService.isAuthenticated()) {
         this.router.navigate(['']);
@@ -44,8 +50,16 @@ export default class LoginComponent implements OnInit, AfterViewInit {
     this.loginService.login(this.loginForm.getRawValue()).subscribe({
       next: () => {
         this.authenticationError.set(false);
-        if (!this.router.getCurrentNavigation()) {
-          // There were no routing during login (eg from navigationToStoredUrl)
+
+        // Get the last visited URL from session storage
+        const lastVisitedUrl = sessionStorage.getItem('lastVisitedUrl');
+
+        if (lastVisitedUrl) {
+          // Navigate to the last visited page
+          this.router.navigate([lastVisitedUrl]);
+          sessionStorage.removeItem('lastVisitedUrl'); // Clean up after use
+        } else if (!this.router.getCurrentNavigation()) {
+          // Default to home if no last visited URL or no navigation
           this.router.navigate(['']);
         }
       },

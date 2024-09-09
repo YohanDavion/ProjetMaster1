@@ -1,0 +1,9 @@
+<div>
+  <h2>Liste des Vélos</h2>
+  <ul>
+    <li *ngFor="let velo of velos">
+      {{ velo.idvelo }} - {{ velo.autonomie }} - {{ velo.capacite }} - {{ velo.etat }}
+      <button (click)="deleteVelo(velo.idvelo)">Supprimer</button>
+    </li>
+  </ul>
+</div>

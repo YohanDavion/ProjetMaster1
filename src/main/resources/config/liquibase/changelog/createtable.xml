@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="2024-09-02-01" author="baptiste">
+        <!-- Table Velo -->
+        <createTable tableName="velo">
+            <column name="IdVelo" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="Autonomie" type="INT"/>
+            <column name="Capacite" type="INT"/>
+            <column name="Etat" type="VARCHAR(255)"/>
+        </createTable>
+
+        <!-- Table Rue -->
+        <createTable tableName="Rue">
+            <column name="IdRue" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="Nom" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="Longueur" type="INT"/>
+        </createTable>
+
+        <!-- Table Arret -->
+        <createTable tableName="Arret">
+            <column name="IdArret" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="Position" type="geometry"/>
+            <column name="Type" type="VARCHAR(255)"/>
+        </createTable>
+
+        <!-- Table Tournee -->
+        <createTable tableName="Tournee">
+            <column name="IdTournee" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="Date" type="DATE"/>
+            <column name="HeureDebut" type="TIME"/>
+            <column name="HeureFin" type="TIME"/>
+            <column name="VeloId" type="BIGINT"/>
+            <column name="CyclisteId" type="BIGINT"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="Tournee"
+                                 baseColumnNames="VeloId"
+                                 referencedTableName="Velo"
+                                 referencedColumnNames="IdVelo"
+                                 constraintName="FK_Tournee_Velo"/>
+        <addForeignKeyConstraint baseTableName="Tournee"
+                                 baseColumnNames="CyclisteId"
+                                 referencedTableName="jhi_user"
+                                 referencedColumnNames="id"
+                                 constraintName="FK_Tournee_JhiUser"/>
+
+        <!-- Table Incident -->
+        <createTable tableName="Incident">
+            <column name="IdIncident" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="Type" type="VARCHAR(255)"/>
+            <column name="Date" type="DATE"/>
+            <column name="Heure" type="TIME"/>
+            <column name="Lieu" type="geometry"/>
+            <column name="Description" type="TEXT"/>
+            <column name="VeloConcerneId" type="BIGINT"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="Incident"
+                                 baseColumnNames="VeloConcerneId"
+                                 referencedTableName="Velo"
+                                 referencedColumnNames="IdVelo"
+                                 constraintName="FK_Incident_Velo"/>
+
+        <!-- Table TourneeArret -->
+        <createTable tableName="TourneeArret">
+            <column name="Id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="OrdrePassage" type="INT"/>
+            <column name="HeureEstimee" type="TIME"/>
+            <column name="TourneeId" type="BIGINT"/>
+            <column name="ArretId" type="BIGINT"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="TourneeArret"
+                                 baseColumnNames="TourneeId"
+                                 referencedTableName="Tournee"
+                                 referencedColumnNames="IdTournee"
+                                 constraintName="FK_TourneeArret_Tournee"/>
+        <addForeignKeyConstraint baseTableName="TourneeArret"
+                                 baseColumnNames="ArretId"
+                                 referencedTableName="Arret"
+                                 referencedColumnNames="IdArret"
+                                 constraintName="FK_TourneeArret_Arret"/>
+
+        <!-- Many-to-Many Relationship Table Rue_Arret -->
+        <createTable tableName="Rue_Arret">
+            <column name="RueId" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ArretId" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="Rue_Arret" columnNames="RueId, ArretId" constraintName="PK_Rue_Arret"/>
+        <addForeignKeyConstraint baseTableName="Rue_Arret"
+                                 baseColumnNames="RueId"
+                                 referencedTableName="Rue"
+                                 referencedColumnNames="IdRue"
+                                 constraintName="FK_Rue_Arret_Rue"/>
+        <addForeignKeyConstraint baseTableName="Rue_Arret"
+                                 baseColumnNames="ArretId"
+                                 referencedTableName="Arret"
+                                 referencedColumnNames="IdArret"
+                                 constraintName="FK_Rue_Arret_Arret"/>
+    </changeSet>
+
+</databaseChangeLog>
