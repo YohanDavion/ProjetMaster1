@@ -1,0 +1,24 @@
+<h2>Gestion des vélos</h2>
+
+<!-- Formulaire d'ajout de vélo -->
+<form (ngSubmit)="addVelo()">
+  <label>Autonomie :</label>
+  <input type="number" [(ngModel)]="newVelo.autonomie" name="autonomie" required />
+
+  <label>Capacité :</label>
+  <input type="number" [(ngModel)]="newVelo.capacite" name="capacite" required />
+
+  <label>État :</label>
+  <input type="text" [(ngModel)]="newVelo.etat" name="etat" required />
+
+  <button type="submit">Ajouter Vélo</button>
+</form>
+
+<!-- Liste des vélos -->
+<h3>Liste des vélos</h3>
+<ul>
+  <li *ngFor="let velo of velos">
+    {{ velo.idVelo }} - {{ velo.autonomie }} km, {{ velo.capacite }} personnes, {{ velo.etat }}
+    <button *ngIf="velo.idVelo !== undefined" (click)="deleteVelo(velo.idVelo)">Supprimer</button>
+  </li>
+</ul>
