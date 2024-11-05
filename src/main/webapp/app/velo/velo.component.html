@@ -1,7 +1,7 @@
-<h2>Gestion des vélos</h2>
+<h2 class="text-center">Gestion des vélos</h2>
 
 <!-- Formulaire d'ajout de vélo -->
-<form (ngSubmit)="addVelo()">
+<form (ngSubmit)="addVelo()" class="form-container-inline">
   <label>Autonomie :</label>
   <input type="number" [(ngModel)]="newVelo.autonomie" name="autonomie" required />
 
@@ -11,14 +11,40 @@
   <label>État :</label>
   <input type="text" [(ngModel)]="newVelo.etat" name="etat" required />
 
-  <button type="submit">Ajouter Vélo</button>
+  <button type="submit" class="btn-submit">Ajouter Vélo</button>
 </form>
 
 <!-- Liste des vélos -->
-<h3>Liste des vélos</h3>
-<ul>
-  <li *ngFor="let velo of velos">
-    {{ velo.idVelo }} - {{ velo.autonomie }} km, {{ velo.capacite }} personnes, {{ velo.etat }}
-    <button *ngIf="velo.idVelo !== undefined" (click)="deleteVelo(velo.idVelo)">Supprimer</button>
-  </li>
-</ul>
+<h3 class="text-center">Liste des vélos</h3>
+<table class="velo-table">
+  <thead>
+    <tr>
+      <th>ID Vélo</th>
+      <th>Autonomie (km)</th>
+      <th>Capacité (%)</th>
+      <th>État</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let velo of velos">
+      <td>{{ velo.idVelo }}</td>
+      <td>
+        <div class="jauge-container">
+          <div class="jauge" [ngStyle]="{ width: velo.autonomie + '%' }"></div>
+        </div>
+        <span class="jauge-text">{{ velo.autonomie }}%</span>
+      </td>
+      <td>
+        <div class="jauge-container">
+          <div class="jauge" [ngStyle]="{ width: velo.capacite + '%' }"></div>
+        </div>
+        <span class="jauge-text">{{ velo.capacite }}%</span>
+      </td>
+      <td>{{ velo.etat }}</td>
+      <td>
+        <button *ngIf="velo.idVelo !== undefined" (click)="deleteVelo(velo.idVelo)" class="btn-delete">Supprimer</button>
+      </td>
+    </tr>
+  </tbody>
+</table>

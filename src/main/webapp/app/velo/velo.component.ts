@@ -7,6 +7,7 @@ import { CommonModule } from '@angular/common'; // Pour d'autres fonctionnalité
 @Component({
   selector: 'app-velo',
   templateUrl: './velo.component.html',
+  styleUrls: ['./velo.component.scss'], // Lien vers le fichier SCSS
   standalone: true,
   imports: [FormsModule, CommonModule], // Ajouter FormsModule ici
 })

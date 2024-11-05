@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import * as L from 'leaflet';
-import { pointsInteret, routes } from '../points-interet';
+import { routes } from '../points-interet';
+import { ArretService, PointInteret } from '../arret.service'; // Importez l'interface et le service
 
 @Component({
   selector: 'app-map',
@@ -13,18 +14,21 @@ export class MapComponent implements OnInit {
   private selectedMarker: L.CircleMarker | null = null;
   private selectedPolyline: L.Polyline | null = null;
   private allPolylines: L.Polyline[] = [];
-  public pointsInteret = pointsInteret;
+  public pointsInteret: { name: string; lat: number; lng: number }[] = [];
+
+  constructor(private arretService: ArretService) {}
 
   ngOnInit(): void {
     this.initMap();
-    this.addMarkers();
-    this.drawRoads();
+    this.loadPointsInteret();
   }
 
   private initMap(): void {
     this.map = L.map('map', {
       center: [48.8566, 2.3522],
       zoom: 12,
+      minZoom: 12, // Niveau de zoom minimum défini sur le niveau de zoom par défaut
+      maxZoom: 19, // Niveau de zoom maximum, vous pouvez ajuster cela si nécessaire
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -34,19 +38,44 @@ export class MapComponent implements OnInit {
     }).addTo(this.map);
   }
 
+  private parsePosition(position: string): { lat: number; lng: number } {
+    const [lat, lng] = position.replace('(', '').replace(')', '').split(' ').map(Number);
+    return { lat, lng };
+  }
+
+  private loadPointsInteret(): void {
+    this.arretService.getArrets().subscribe(data => {
+      this.pointsInteret = data
+        .map(arret => {
+          if (arret.position) {
+            const { lat, lng } = this.parsePosition(arret.position);
+            return {
+              name: arret.nom,
+              lat: lat,
+              lng: lng,
+            };
+          }
+          return null;
+        })
+        .filter((point): point is { name: string; lat: number; lng: number } => point !== null);
+
+      this.addMarkers();
+      this.drawRoads();
+    });
+  }
+
   private addMarkers(): void {
     this.pointsInteret.forEach(point => {
       let markerOptions: L.CircleMarkerOptions = {
-        radius: 5, // Default radius for markers
+        radius: 5,
         color: 'red',
         fillOpacity: 0.5,
       };
 
-      // Special style for "Porte d’Ivry"
       if (point.name === "Porte d'Ivry") {
         markerOptions = {
-          radius: 10, // Larger radius for emphasis
-          color: 'green', // Different color for emphasis
+          radius: 10,
+          color: 'green',
           fillOpacity: 0.8,
         };
       }
@@ -74,7 +103,7 @@ export class MapComponent implements OnInit {
 
       if (points.length > 1) {
         const polyline = L.polyline(points, { color: 'grey', weight: 4 }).addTo(this.map);
-        this.allPolylines.push(polyline); // Store all polylines
+        this.allPolylines.push(polyline);
 
         polyline.on('click', () => {
           this.highlightRoad(polyline);
@@ -84,10 +113,7 @@ export class MapComponent implements OnInit {
   }
 
   private highlightRoad(polyline: L.Polyline): void {
-    // Hide all polylines first
     this.allPolylines.forEach(line => this.map.removeLayer(line));
-
-    // Highlight the selected polyline
     this.selectedPolyline = polyline;
     polyline.setStyle({ color: 'blue' });
     this.map.addLayer(polyline);
@@ -98,7 +124,6 @@ export class MapComponent implements OnInit {
       this.selectedPolyline.setStyle({ color: 'grey' });
       this.selectedPolyline = null;
     }
-
     this.allPolylines.forEach(line => this.map.addLayer(line));
   }
 

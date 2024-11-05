@@ -2,7 +2,8 @@ import { Component, OnInit, AfterViewInit } from '@angular/core';
 import * as L from 'leaflet';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { pointsInteret, routes, PointInteret } from '../points-interet';
+import { ArretService, PointInteret } from '../arret.service';
+import { routes } from '../points-interet';
 
 @Component({
   standalone: true,
@@ -15,36 +16,29 @@ export class RouteCalculatorComponent implements OnInit, AfterViewInit {
   private map!: L.Map;
   private markersMap: { [key: string]: L.CircleMarker } = {};
   private selectedRoute: L.Polyline | null = null;
-  private allPolylines: L.Polyline[] = []; // Stocke toutes les polylines grises
-  public pointsInteret = pointsInteret;
-  public roadsVisible = true; // Suivi de la visibilité des routes grises
+  private allPolylines: L.Polyline[] = [];
+  public pointsInteret: PointInteret[] = [];
+  public roadsVisible = true;
 
   public startPoint: PointInteret | null = null;
   public endPoint: PointInteret | null = null;
 
-  ngOnInit(): void {
-    // Réorganiser les points d'intérêt pour que "Porte d'Ivry" soit en premier
-    this.pointsInteret = pointsInteret.sort((a, b) => {
-      if (a.name === "Porte d'Ivry") return -1;
-      if (b.name === "Porte d'Ivry") return 1;
-      return 0;
-    });
+  constructor(private arretService: ArretService) {}
 
-    // Initialiser startPoint et endPoint à "Porte d'Ivry"
-    this.startPoint = this.pointsInteret[0];
-    this.endPoint = this.pointsInteret[0];
+  ngOnInit(): void {
+    this.initMap();
+    this.loadPointsInteret();
   }
 
   ngAfterViewInit(): void {
-    this.initMap();
-    this.addMarkers();
-    this.drawRoads();
+    // La carte est initialisée dans ngOnInit, donc pas besoin de la réinitialiser ici
   }
-
   private initMap(): void {
     this.map = L.map('map', {
       center: [48.8566, 2.3522],
       zoom: 12,
+      minZoom: 12, // Niveau de zoom minimum défini sur le niveau de zoom par défaut
+      maxZoom: 19, // Niveau de zoom maximum, vous pouvez ajuster cela si nécessaire
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -54,14 +48,33 @@ export class RouteCalculatorComponent implements OnInit, AfterViewInit {
     }).addTo(this.map);
   }
 
-  public toggleRoadsVisibility(): void {
-    this.roadsVisible = !this.roadsVisible;
-    this.allPolylines.forEach(line => {
-      if (this.roadsVisible) {
-        this.map.addLayer(line);
-      } else {
-        this.map.removeLayer(line);
-      }
+  private parsePosition(position: string): { lat: number; lng: number } {
+    const [lat, lng] = position.replace('(', '').replace(')', '').split(' ').map(Number);
+    return { lat, lng };
+  }
+
+  private loadPointsInteret(): void {
+    this.arretService.getArrets().subscribe(data => {
+      this.pointsInteret = data
+        .map(arret => {
+          if (arret.position) {
+            const { lat, lng } = this.parsePosition(arret.position);
+            return {
+              nom: arret.nom,
+              lat: lat,
+              lng: lng,
+            };
+          }
+          return null;
+        })
+        .filter((point): point is PointInteret => point !== null);
+
+      this.addMarkers();
+      this.drawRoads();
+
+      // Initialiser startPoint et endPoint à "Porte d'Ivry"
+      this.startPoint = this.pointsInteret.find(point => point.nom === "Porte d'Ivry") || this.pointsInteret[0];
+      this.endPoint = this.startPoint;
     });
   }
 
@@ -73,24 +86,23 @@ export class RouteCalculatorComponent implements OnInit, AfterViewInit {
         fillOpacity: 0.5,
       };
 
-      // Style spécial pour "Porte d’Ivry"
-      if (point.name === "Porte d'Ivry") {
+      if (point.nom === "Porte d'Ivry") {
         markerOptions = {
-          radius: 10, // Plus grand rayon pour l'emphase
-          color: 'green', // Couleur différente pour l'emphase
+          radius: 10,
+          color: 'green',
           fillOpacity: 0.8,
         };
       }
 
       const marker = L.circleMarker([point.lat, point.lng], markerOptions).addTo(this.map);
 
-      marker.bindPopup(`<b>${point.name}</b><br>Cliquez pour sélectionner ce point.`);
+      marker.bindPopup(`<b>${point.nom}</b><br>Cliquez pour sélectionner ce point.`);
 
       marker.on('click', () => {
         this.selectPoint(marker, point);
       });
 
-      this.markersMap[point.name] = marker;
+      this.markersMap[point.nom] = marker;
     });
   }
 
@@ -98,11 +110,11 @@ export class RouteCalculatorComponent implements OnInit, AfterViewInit {
     if (!this.startPoint) {
       this.startPoint = point;
       marker.setStyle({ color: 'blue' });
-      marker.bindPopup(`<b>${point.name}</b><br>Point de départ sélectionné.`).openPopup();
+      marker.bindPopup(`<b>${point.nom}</b><br>Point de départ sélectionné.`).openPopup();
     } else if (!this.endPoint) {
       this.endPoint = point;
       marker.setStyle({ color: 'green' });
-      marker.bindPopup(`<b>${point.name}</b><br>Point d'arrivée sélectionné.`).openPopup();
+      marker.bindPopup(`<b>${point.nom}</b><br>Point d'arrivée sélectionné.`).openPopup();
       this.calculateRoute(this.startPoint, this.endPoint);
     } else {
       this.resetSelection();
@@ -112,12 +124,12 @@ export class RouteCalculatorComponent implements OnInit, AfterViewInit {
 
   private resetSelection(): void {
     if (this.startPoint) {
-      const marker = this.markersMap[this.startPoint.name];
+      const marker = this.markersMap[this.startPoint.nom];
       marker.setStyle({ color: 'red' });
       this.startPoint = null;
     }
     if (this.endPoint) {
-      const marker = this.markersMap[this.endPoint.name];
+      const marker = this.markersMap[this.endPoint.nom];
       marker.setStyle({ color: 'red' });
       this.endPoint = null;
     }
@@ -128,14 +140,14 @@ export class RouteCalculatorComponent implements OnInit, AfterViewInit {
   }
 
   public calculateRoute(start: PointInteret, end: PointInteret): void {
-    const queue: string[][] = [[start.name]];
+    const queue: string[][] = [[start.nom]];
     const visited: Set<string> = new Set();
 
     while (queue.length > 0) {
       const path = queue.shift()!;
       const lastNode = path[path.length - 1];
 
-      if (lastNode === end.name) {
+      if (lastNode === end.nom) {
         this.drawRoute(path);
         return;
       }
@@ -178,30 +190,28 @@ export class RouteCalculatorComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    const latlngs = path.map(name => {
-      const point = this.pointsInteret.find(p => p.name === name);
-      return [point!.lat, point!.lng];
-    }) as [number, number][];
+    const latlngs = path
+      .map(name => {
+        const point = this.pointsInteret.find(p => p.nom === name);
+        return point ? [point.lat, point.lng] : null;
+      })
+      .filter((p): p is [number, number] => p !== null);
 
     if (!latlngs.length) {
       console.error('Le chemin des latitudes et longitudes est vide ou mal formé.');
       return;
     }
 
-    // Supprimer la route actuellement sélectionnée, le cas échéant
     if (this.selectedRoute) {
       this.map.removeLayer(this.selectedRoute);
     }
 
-    // Masquer toutes les routes grises
     this.allPolylines.forEach(line => this.map.removeLayer(line));
 
-    // Ajouter à nouveau les routes grises si elles sont configurées pour être visibles
     if (this.roadsVisible) {
       this.allPolylines.forEach(line => this.map.addLayer(line));
     }
 
-    // Dessiner la route sélectionnée en bleu et l'ajouter à la carte après les routes grises
     this.selectedRoute = L.polyline(latlngs, { color: 'blue', weight: 6 });
     this.map.addLayer(this.selectedRoute);
     this.map.fitBounds(this.selectedRoute.getBounds());
@@ -214,14 +224,25 @@ export class RouteCalculatorComponent implements OnInit, AfterViewInit {
     Object.keys(routes).forEach(road => {
       const points = routes[road]
         .map(name => {
-          const point = this.pointsInteret.find(p => p.name === name);
+          const point = this.pointsInteret.find(p => p.nom === name);
           return point ? [point.lat, point.lng] : null;
         })
         .filter((p): p is [number, number] => p !== null);
 
       if (points.length > 1) {
         const polyline = L.polyline(points, { color: 'grey', weight: 4 }).addTo(this.map);
-        this.allPolylines.push(polyline); // Stocker toutes les polylines grises
+        this.allPolylines.push(polyline);
+      }
+    });
+  }
+
+  public toggleRoadsVisibility(): void {
+    this.roadsVisible = !this.roadsVisible;
+    this.allPolylines.forEach(line => {
+      if (this.roadsVisible) {
+        this.map.addLayer(line);
+      } else {
+        this.map.removeLayer(line);
       }
     });
   }

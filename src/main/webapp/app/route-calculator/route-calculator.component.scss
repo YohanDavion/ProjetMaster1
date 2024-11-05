@@ -1,9 +1,17 @@
 .map-container {
-  height: 80vh;
+  position: relative;
+  height: 80vh; // Hauteur prenant presque tout l'écran pour un meilleur affichage
+  width: 100%; // Prend toute la largeur disponible
+}
+
+.map {
+  height: 100%; // Remplit complètement le conteneur
+  width: 100%; // S'assure que la carte remplit la largeur disponible
+  border: 1px solid #ccc; // Optionnel : ajoute une bordure pour mieux délimiter la carte
 }
 
 .controls {
-  margin-top: 10px;
+  margin: 10px 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
