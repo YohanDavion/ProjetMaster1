@@ -1,0 +1,30 @@
+<h1>Clients :</h1>
+<div class="card">
+  <p-table [value]="test" [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5, 10, 20]">
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 20%">ID</th>
+        <th style="width: 20%">Prénom</th>
+        <th style="width: 20%">Nom</th>
+        <th style="width: 20%">Date de Création</th>
+        <th style="width: 20%"></th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-client>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>
+          <button type="button" style="margin-right: 15px" pButton icon="pi pi-user" (click)="click()"></button>
+          <button type="button" style="margin-right: 15px" severity="danger" pButton icon="pi pi-trash" (click)="click()"></button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="paginatorleft">
+      <p-button type="button" icon="pi pi-plus" styleClass="p-button-text" (click)="click()"></p-button>
+    </ng-template>
+  </p-table>
+  <p-toast></p-toast>
+</div>

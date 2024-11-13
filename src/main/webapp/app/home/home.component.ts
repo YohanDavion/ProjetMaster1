@@ -47,4 +47,8 @@ export default class HomeComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
   }
+
+  goToPage(pageName: string) {
+    this.router.navigate([`${pageName}`]);
+  }
 }

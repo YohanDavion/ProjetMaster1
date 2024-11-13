@@ -4,7 +4,7 @@
     <p-card>
       <i class="pi pi-users" style="font-size: 2rem; margin-right: 15px"></i>
       <label>Vélo en Circulation : {{ this.nbVeloCirculation }}</label>
-      <p-button label="Gérer" />
+      <p-button label="Gérer" (click)="goToPage('liste-velo')" />
     </p-card>
     <p-card>
       <i class="pi pi-folder-open" style="font-size: 2rem; margin-right: 15px"></i>

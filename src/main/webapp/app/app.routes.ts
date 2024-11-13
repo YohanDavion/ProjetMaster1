@@ -10,6 +10,7 @@ import LoginComponent from './login/login.component';
 import { MapComponent } from './map/map.component';
 import { RouteCalculatorComponent } from './route-calculator/route-calculator.component';
 import { VeloComponent } from './velo/velo.component';
+import { ListeVeloComponent } from './velos/liste-velo/liste-velo.component';
 
 const routes: Routes = [
   {
@@ -53,6 +54,11 @@ const routes: Routes = [
     path: 'velo',
     component: VeloComponent,
     title: 'Velo',
+  },
+  {
+    path: 'liste-velo',
+    component: ListeVeloComponent,
+    title: 'Liste des Vélos',
   },
   {
     path: '',
