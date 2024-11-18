@@ -4,7 +4,10 @@ import com.limayrac.velopoubelle.domain.Velo;
 import com.limayrac.velopoubelle.repository.VeloRepository;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,7 +38,6 @@ public class VeloResource {
     @PostMapping("/velo")
     public ResponseEntity<Velo> createVelo(@RequestBody Velo velo) throws URISyntaxException {
         if (velo.getIdVelo() != null) {
-            // Si l'ID est déjà défini, cela signifie que le vélo existe déjà
             return ResponseEntity.badRequest().build();
         }
         Velo result = veloRepository.save(velo);
@@ -57,5 +59,25 @@ public class VeloResource {
     @GetMapping("/velo/{id}")
     public ResponseEntity<Velo> getVelo(@PathVariable Long id) {
         return veloRepository.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * GET /velo-with-position : Obtenir tous les vélos avec leurs positions en format { lat, lng }.
+     */
+    @GetMapping("/velo-with-position")
+    public List<Map<String, Object>> getVelosWithPosition() {
+        List<Velo> velos = veloRepository.findAll();
+        return velos
+            .stream()
+            .map(velo -> {
+                Map<String, Object> result = new HashMap<>();
+                result.put("idVelo", velo.getIdVelo());
+                result.put("autonomie", velo.getAutonomie());
+                result.put("capacite", velo.getCapacite());
+                result.put("etat", velo.getEtat());
+                result.put("position", velo.getPositionObject()); // Appelle la méthode de l'entité
+                return result;
+            })
+            .collect(Collectors.toList());
     }
 }

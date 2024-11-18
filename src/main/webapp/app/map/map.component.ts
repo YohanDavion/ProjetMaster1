@@ -12,11 +12,12 @@ import { VeloService } from '../velo/velo.service'; // Assurez-vous que le chemi
 })
 export class MapComponent implements OnInit {
   private map!: L.Map;
-  private markersMap: { [key: string]: L.CircleMarker } = {};
+  private markersMap: { [key: string]: L.Marker | L.CircleMarker } = {};
   private selectedMarker: L.CircleMarker | null = null;
   private selectedPolyline: L.Polyline | null = null;
   private allPolylines: L.Polyline[] = [];
   public pointsInteret: (PointInteret & { lat: number; lng: number })[] = [];
+  public velos: Velo[] = []; // Liste des vélos pour l'affichage
 
   constructor(
     private arretService: ArretService,
@@ -26,6 +27,7 @@ export class MapComponent implements OnInit {
   ngOnInit(): void {
     this.initMap();
     this.loadPointsInteret();
+    this.addVeloMarkers(); // Ajoutez cette ligne
   }
 
   private initMap(): void {
@@ -148,27 +150,33 @@ export class MapComponent implements OnInit {
   }
 
   public highlightMarker(pointName: string): void {
-    if (this.selectedMarker) {
-      this.selectedMarker.setStyle({ color: 'red' });
-    }
-
     const marker = this.markersMap[pointName];
     if (marker) {
-      marker.setStyle({ color: 'blue' });
+      if (this.selectedMarker) {
+        if (this.selectedMarker instanceof L.CircleMarker) {
+          this.selectedMarker.setStyle({ color: 'red' });
+        }
+      }
+
+      if (marker instanceof L.CircleMarker) {
+        marker.setStyle({ color: 'blue' });
+      }
+
       marker.openPopup();
-      this.selectedMarker = marker;
+      this.selectedMarker = marker instanceof L.CircleMarker ? marker : null;
       this.map.panTo(marker.getLatLng());
     }
   }
 
   private addVeloMarkers(): void {
     this.veloService.getVelosWithPosition().subscribe(velos => {
+      this.velos = velos; // Stocker la liste des vélos
       velos.forEach(velo => {
         if (velo.position) {
-          const { lat, lng } = velo.position; // Pas besoin de parsePosition
+          const { lat, lng } = velo.position; // Suppression de parsePosition
           const marker = L.marker([lat, lng], {
             icon: L.icon({
-              iconUrl: '/velo.icon.png', // Chemin vers une icône personnalisée
+              iconUrl: '/content/images/velo.ico', // Assurez-vous que ce chemin est correct
               iconSize: [32, 32],
             }),
           }).addTo(this.map);
@@ -176,29 +184,62 @@ export class MapComponent implements OnInit {
           marker.bindPopup(
             `<b>Vélo ${velo.idVelo}</b><br>Autonomie: ${velo.autonomie} km<br>Capacité: ${velo.capacite} kg<br>État: ${velo.etat}`,
           );
+          this.markersMap[`velo-${velo.idVelo}`] = marker; // Stocker les marqueurs par ID de vélo
         }
       });
     });
   }
+  private getPath(start: { lat: number; lng: number }, end: PointInteret & { lat: number; lng: number }): { lat: number; lng: number }[] {
+    // Exemple de logique pour générer un chemin entre deux points.
+    const path: { lat: number; lng: number }[] = [];
+    const route = routes['default']; // Assurez-vous que `routes` contient les données nécessaires.
 
-  private moveVelo(velo: Velo, path: { lat: number; lng: number }[]): void {
-    let index = 0;
-    const interval = setInterval(() => {
-      if (index < path.length) {
-        const position = path[index];
-        velo.position = position; // Mise à jour de la position
-        this.updateVeloMarker(velo.idVelo!, position); // Mise à jour du marqueur
-        index++;
-      } else {
-        clearInterval(interval);
+    route.forEach(name => {
+      const point = this.pointsInteret.find(p => p.nom === name);
+      if (point) {
+        path.push({ lat: point.lat, lng: point.lng });
       }
-    }, 1000); // Déplacement toutes les 1 seconde
+    });
+
+    return path.length > 0 ? path : [start, { lat: end.lat, lng: end.lng }];
   }
 
+  private moveVelo(velo: Velo): void {
+    if (!velo.routeName || !routes[velo.routeName]) {
+      console.error(`Route non définie pour le vélo ${velo.idVelo}`);
+      return;
+    }
+
+    const route = routes[velo.routeName]
+      .map(pointName => {
+        const point = this.pointsInteret.find(p => p.nom === pointName);
+        return point ? { lat: point.lat, lng: point.lng } : null;
+      })
+      .filter((point): point is { lat: number; lng: number } => point !== null);
+
+    let index = 0;
+    const interval = setInterval(() => {
+      if (index < route.length) {
+        const position = route[index];
+        velo.position = position; // Met à jour la position dans le modèle
+        this.updateVeloMarker(velo.idVelo!, position); // Met à jour le marqueur sur la carte
+        index++;
+      } else {
+        clearInterval(interval); // Arrête le déplacement à la fin du chemin
+      }
+    }, 1000); // Déplacement toutes les secondes
+  }
   private updateVeloMarker(idVelo: number, position: { lat: number; lng: number }): void {
     const marker = this.markersMap[`velo-${idVelo}`];
-    if (marker) {
-      marker.setLatLng([position.lat, position.lng]);
+    if (marker && marker instanceof L.Marker) {
+      marker.setLatLng([position.lat, position.lng]); // Met à jour la position du marqueur
+    }
+  }
+
+  public startMovingVelo(idVelo: number): void {
+    const velo = this.velos.find(v => v.idVelo === idVelo);
+    if (velo) {
+      this.moveVelo(velo);
     }
   }
 }

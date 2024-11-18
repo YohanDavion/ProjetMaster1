@@ -2,3 +2,7 @@
   <div id="map" class="map"></div>
   <button (click)="deselectRoute()" class="deselect-button">Désélectionner la route</button>
 </div>
+
+<div *ngFor="let velo of velos">
+  <button (click)="startMovingVelo(velo.idVelo)">Déplacer Vélo {{ velo.idVelo }}</button>
+</div>
