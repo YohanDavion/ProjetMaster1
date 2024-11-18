@@ -25,4 +25,9 @@ export class VeloService {
   deleteVelo(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
+
+  // Récupérer la position des vélos
+  getVelosWithPosition(): Observable<Velo[]> {
+    return this.http.get<Velo[]>(`${this.baseUrl}?includePosition=true`);
+  }
 }

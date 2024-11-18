@@ -3,6 +3,7 @@ package com.limayrac.velopoubelle.service;
 import com.limayrac.velopoubelle.domain.Arret;
 import com.limayrac.velopoubelle.repository.ArretRepository;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,5 +15,13 @@ public class ArretService {
 
     public List<Arret> getAllArrets() {
         return arretRepository.findAll();
+    }
+
+    public void viderPoubelle(Long id) {
+        Optional<Arret> arret = arretRepository.findById(id);
+        arret.ifPresent(a -> {
+            a.setPoubelleVidee(true);
+            arretRepository.save(a);
+        });
     }
 }

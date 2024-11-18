@@ -3,4 +3,5 @@ export class Velo {
   autonomie?: number;
   capacite?: number;
   etat?: string;
+  position?: { lat: number; lng: number }; // Nouvelle propriété pour la position
 }

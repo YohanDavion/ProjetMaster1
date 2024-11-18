@@ -25,6 +25,18 @@ public class Velo {
         return idVelo;
     }
 
+    @Column(name = "Position")
+    private String position;
+
+    // Getter et Setter
+    public String getPosition() {
+        return position;
+    }
+
+    public void setPosition(String position) {
+        this.position = position;
+    }
+
     public void setIdVelo(Long idVelo) {
         this.idVelo = idVelo;
     }

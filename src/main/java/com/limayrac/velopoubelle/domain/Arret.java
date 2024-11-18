@@ -22,6 +22,17 @@ public class Arret {
     @Column(name = "Nom")
     private String nom;
 
+    @Column(name = "poubelleVidee")
+    private Boolean poubelleVidee;
+
+    public Boolean getPoubelleVidee() {
+        return poubelleVidee;
+    }
+
+    public void setPoubelleVidee(Boolean poubelleVidee) {
+        this.poubelleVidee = poubelleVidee;
+    }
+
     public Long getIdArret() {
         return idArret;
     }
