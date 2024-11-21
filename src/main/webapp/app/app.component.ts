@@ -9,6 +9,7 @@ import { FormsModule } from '@angular/forms'; // Importer FormsModule
 import { ApplicationConfigService } from 'app/core/config/application-config.service';
 import { fontAwesomeIcons } from './config/font-awesome-icons';
 import MainComponent from './layouts/main/main.component';
+import { MapComponent } from './map/map.component';
 
 @Component({
   standalone: true,
@@ -18,7 +19,7 @@ import MainComponent from './layouts/main/main.component';
     MainComponent,
     FormsModule,
     CommonModule,
-
+    MapComponent,
     // jhipster-needle-angular-add-module JHipster will add new module here
   ],
 })

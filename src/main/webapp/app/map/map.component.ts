@@ -4,8 +4,11 @@ import { routes } from '../points-interet';
 import { ArretService, PointInteret } from '../arret.service'; // Importez l'interface et le service
 import { Velo } from 'app/velo/velo.model';
 import { VeloService } from '../velo/velo.service'; // Assurez-vous que le chemin est correct
+import { CommonModule } from '@angular/common';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule], // Import nécessaire pour les directives Angular telles que *ngFor
   selector: 'app-map',
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss'],
@@ -206,7 +209,7 @@ export class MapComponent implements OnInit {
 
   private moveVelo(velo: Velo): void {
     if (!velo.routeName || !routes[velo.routeName]) {
-      console.error(`Route non définie pour le vélo ${velo.idVelo}`);
+      console.error(`Route non définie ou introuvable pour le vélo ${velo.idVelo}`);
       return;
     }
 
@@ -217,18 +220,24 @@ export class MapComponent implements OnInit {
       })
       .filter((point): point is { lat: number; lng: number } => point !== null);
 
+    if (route.length === 0) {
+      console.error(`Aucun point d'intérêt trouvé sur la route ${velo.routeName}`);
+      return;
+    }
+
     let index = 0;
     const interval = setInterval(() => {
       if (index < route.length) {
         const position = route[index];
-        velo.position = position; // Met à jour la position dans le modèle
-        this.updateVeloMarker(velo.idVelo!, position); // Met à jour le marqueur sur la carte
+        velo.position = position; // Mise à jour de la position du vélo
+        this.updateVeloMarker(velo.idVelo!, position); // Mise à jour du marqueur sur la carte
         index++;
       } else {
-        clearInterval(interval); // Arrête le déplacement à la fin du chemin
+        clearInterval(interval); // Fin du déplacement
       }
-    }, 1000); // Déplacement toutes les secondes
+    }, 1000); // Intervalle de déplacement : 1 seconde
   }
+
   private updateVeloMarker(idVelo: number, position: { lat: number; lng: number }): void {
     const marker = this.markersMap[`velo-${idVelo}`];
     if (marker && marker instanceof L.Marker) {
@@ -239,6 +248,10 @@ export class MapComponent implements OnInit {
   public startMovingVelo(idVelo: number): void {
     const velo = this.velos.find(v => v.idVelo === idVelo);
     if (velo) {
+      if (!velo.routeName) {
+        console.warn(`Aucune route spécifiée pour le vélo ${idVelo}. Utilisation d'une route par défaut.`);
+        velo.routeName = 'Rue Croix-Baragnon'; // Route par défaut
+      }
       this.moveVelo(velo);
     }
   }
