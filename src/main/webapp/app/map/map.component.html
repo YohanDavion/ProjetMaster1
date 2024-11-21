@@ -4,5 +4,16 @@
 </div>
 
 <div *ngFor="let velo of velos">
-  <button *ngIf="velo.idVelo !== undefined" (click)="startMovingVelo(velo.idVelo)">Déplacer Vélo {{ velo.idVelo }}</button>
+  <div class="velo-item">
+    <h3>Vélo {{ velo.idVelo }}</h3>
+    <select [(ngModel)]="velo.startPoint">
+      <option *ngFor="let point of pointsInteret" [ngValue]="point">{{ point.nom }}</option>
+    </select>
+    <select [(ngModel)]="velo.endPoint">
+      <option *ngFor="let point of pointsInteret" [ngValue]="point">{{ point.nom }}</option>
+    </select>
+    <button *ngIf="velo.startPoint && velo.endPoint" (click)="startMovingVelo(velo.idVelo, velo.endPoint)">
+      Déplacer Vélo {{ velo.idVelo }}
+    </button>
+  </div>
 </div>

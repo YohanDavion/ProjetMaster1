@@ -5,15 +5,18 @@ import { ArretService, PointInteret } from '../arret.service'; // Importez l'int
 import { Velo } from 'app/velo/velo.model';
 import { VeloService } from '../velo/velo.service'; // Assurez-vous que le chemin est correct
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   standalone: true,
-  imports: [CommonModule], // Import nécessaire pour les directives Angular telles que *ngFor
+  imports: [CommonModule, FormsModule], // Import nécessaire pour les directives Angular telles que *ngFor
   selector: 'app-map',
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss'],
 })
 export class MapComponent implements OnInit {
+  public startPoint: PointInteret | null = null; // Point de départ sélectionné
+  public endPoint: PointInteret | null = null; // Point d'arrivée sélectionné
   private map!: L.Map;
   private markersMap: { [key: string]: L.Marker | L.CircleMarker } = {};
   private selectedMarker: L.CircleMarker | null = null;
@@ -192,48 +195,48 @@ export class MapComponent implements OnInit {
       });
     });
   }
+
   private getPath(start: { lat: number; lng: number }, end: PointInteret & { lat: number; lng: number }): { lat: number; lng: number }[] {
-    // Exemple de logique pour générer un chemin entre deux points.
     const path: { lat: number; lng: number }[] = [];
-    const route = routes['default']; // Assurez-vous que `routes` contient les données nécessaires.
+    const route = routes['default']; // Vérifier si une route "default" existe
 
-    route.forEach(name => {
-      const point = this.pointsInteret.find(p => p.nom === name);
-      if (point) {
-        path.push({ lat: point.lat, lng: point.lng });
-      }
-    });
+    if (route) {
+      route.forEach(name => {
+        const point = this.pointsInteret.find(p => p.nom === name);
+        if (point) {
+          path.push({ lat: point.lat, lng: point.lng });
+        }
+      });
+    }
 
-    return path.length > 0 ? path : [start, { lat: end.lat, lng: end.lng }];
+    if (path.length === 0) {
+      // Si aucun chemin trouvé, utiliser un chemin direct
+      return [start, { lat: end.lat, lng: end.lng }];
+    }
+
+    path.push({ lat: end.lat, lng: end.lng });
+    return path;
   }
 
-  private moveVelo(velo: Velo): void {
-    if (!velo.routeName || !routes[velo.routeName]) {
-      console.error(`Route non définie ou introuvable pour le vélo ${velo.idVelo}`);
+  private moveVelo(velo: Velo, path: { lat: number; lng: number }[]): void {
+    if (path.length === 0) {
+      console.error('Aucun chemin fourni pour le vélo.');
       return;
     }
 
-    const route = routes[velo.routeName]
-      .map(pointName => {
-        const point = this.pointsInteret.find(p => p.nom === pointName);
-        return point ? { lat: point.lat, lng: point.lng } : null;
-      })
-      .filter((point): point is { lat: number; lng: number } => point !== null);
-
-    if (route.length === 0) {
-      console.error(`Aucun point d'intérêt trouvé sur la route ${velo.routeName}`);
-      return;
-    }
+    console.log(`Déplacement du vélo ${velo.idVelo} sur ${path.length} points.`);
 
     let index = 0;
     const interval = setInterval(() => {
-      if (index < route.length) {
-        const position = route[index];
-        velo.position = position; // Mise à jour de la position du vélo
-        this.updateVeloMarker(velo.idVelo!, position); // Mise à jour du marqueur sur la carte
+      if (index < path.length) {
+        const position = path[index];
+        console.log(`Vélo ${velo.idVelo} se déplace à ${position.lat}, ${position.lng}`);
+        velo.position = position; // Met à jour la position du vélo
+        this.updateVeloMarker(velo.idVelo!, position); // Met à jour le marqueur sur la carte
         index++;
       } else {
         clearInterval(interval); // Fin du déplacement
+        console.log(`Vélo ${velo.idVelo} est arrivé à destination.`);
       }
     }, 1000); // Intervalle de déplacement : 1 seconde
   }
@@ -242,17 +245,87 @@ export class MapComponent implements OnInit {
     const marker = this.markersMap[`velo-${idVelo}`];
     if (marker && marker instanceof L.Marker) {
       marker.setLatLng([position.lat, position.lng]); // Met à jour la position du marqueur
+      this.map.panTo([position.lat, position.lng], { animate: true }); // Centre la carte sur la position mise à jour
+    } else {
+      console.error(`Marqueur pour le vélo ${idVelo} introuvable.`);
     }
   }
 
-  public startMovingVelo(idVelo: number): void {
+  public startMovingVelo(idVelo: number | undefined, destination: PointInteret): void {
+    if (!idVelo) {
+      console.error('ID du vélo manquant.');
+      return;
+    }
+
     const velo = this.velos.find(v => v.idVelo === idVelo);
     if (velo) {
-      if (!velo.routeName) {
-        console.warn(`Aucune route spécifiée pour le vélo ${idVelo}. Utilisation d'une route par défaut.`);
-        velo.routeName = 'Rue Croix-Baragnon'; // Route par défaut
+      const startPoint = this.pointsInteret.find(p => p.lat === velo.position?.lat && p.lng === velo.position?.lng);
+
+      if (!startPoint) {
+        console.error('Point de départ introuvable.');
+        return;
       }
-      this.moveVelo(velo);
+
+      const route = this.calculateRoute(startPoint, destination);
+      console.log(`Route calculée pour le vélo ${idVelo}:`, route);
+      this.moveVelo(velo, route);
+    } else {
+      console.error(`Vélo avec ID ${idVelo} introuvable.`);
     }
+  }
+
+  private calculateRoute(start: PointInteret, end: PointInteret): { lat: number; lng: number }[] {
+    const queue: string[][] = [[start.nom]]; // Utilise le nom pour rechercher les chemins
+    const visited: Set<string> = new Set();
+
+    while (queue.length > 0) {
+      const path = queue.shift()!;
+      const lastNode = path[path.length - 1];
+
+      if (lastNode === end.nom) {
+        console.log(`Chemin trouvé: ${path}`);
+        return this.getLatLngPath(path); // Convertit les noms en lat/lng
+      }
+
+      if (!visited.has(lastNode)) {
+        visited.add(lastNode);
+
+        const neighbors = this.getAllNeighbors(lastNode);
+
+        for (const neighbor of neighbors) {
+          if (!visited.has(neighbor)) {
+            queue.push([...path, neighbor]);
+          }
+        }
+      }
+    }
+
+    console.error('Aucun chemin trouvé.');
+    return [];
+  }
+
+  private getAllNeighbors(pointName: string): string[] {
+    let neighbors: string[] = [];
+    for (const route in routes) {
+      if (routes[route].includes(pointName)) {
+        const index = routes[route].indexOf(pointName);
+        if (index > 0) {
+          neighbors.push(routes[route][index - 1]);
+        }
+        if (index < routes[route].length - 1) {
+          neighbors.push(routes[route][index + 1]);
+        }
+      }
+    }
+    return neighbors;
+  }
+
+  private getLatLngPath(path: string[]): { lat: number; lng: number }[] {
+    return path
+      .map(name => {
+        const point = this.pointsInteret.find(p => p.nom === name);
+        return point ? { lat: point.lat, lng: point.lng } : null;
+      })
+      .filter((p): p is { lat: number; lng: number } => p !== null);
   }
 }
