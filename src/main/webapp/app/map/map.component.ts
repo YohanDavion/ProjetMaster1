@@ -6,6 +6,8 @@ import { Velo } from 'app/velo/velo.model';
 import { VeloService } from '../velo/velo.service'; // Assurez-vous que le chemin est correct
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Incident } from 'app/incident/incident.model';
+import { IncidentService } from 'app/incident/incident.service';
 
 @Component({
   standalone: true,
@@ -27,13 +29,15 @@ export class MapComponent implements OnInit {
 
   constructor(
     private arretService: ArretService,
-    private veloService: VeloService, // Injection du service ici
+    private veloService: VeloService,
+    private incidentService: IncidentService, // Ajoutez ici si manquant
   ) {}
 
   ngOnInit(): void {
     this.initMap();
     this.loadPointsInteret();
-    this.addVeloMarkers(); // Ajoutez cette ligne
+    this.addVeloMarkers();
+    this.loadIncidents(); // Charger les incidents actifs au démarrage
   }
 
   private initMap(): void {
@@ -106,13 +110,6 @@ export class MapComponent implements OnInit {
       });
 
       this.markersMap[point.nom] = marker;
-    });
-  }
-
-  public viderPoubelle(id: number): void {
-    this.arretService.viderPoubelle(id).subscribe(() => {
-      alert('Poubelle vidée avec succès');
-      this.reloadMarkers();
     });
   }
 
@@ -218,29 +215,6 @@ export class MapComponent implements OnInit {
     return path;
   }
 
-  private moveVelo(velo: Velo, path: { lat: number; lng: number }[]): void {
-    if (path.length === 0) {
-      console.error('Aucun chemin fourni pour le vélo.');
-      return;
-    }
-
-    console.log(`Déplacement du vélo ${velo.idVelo} sur ${path.length} points.`);
-
-    let index = 0;
-    const interval = setInterval(() => {
-      if (index < path.length) {
-        const position = path[index];
-        console.log(`Vélo ${velo.idVelo} se déplace à ${position.lat}, ${position.lng}`);
-        velo.position = position; // Met à jour la position du vélo
-        this.updateVeloMarker(velo.idVelo!, position); // Met à jour le marqueur sur la carte
-        index++;
-      } else {
-        clearInterval(interval); // Fin du déplacement
-        console.log(`Vélo ${velo.idVelo} est arrivé à destination.`);
-      }
-    }, 1000); // Intervalle de déplacement : 1 seconde
-  }
-
   private updateVeloMarker(idVelo: number, position: { lat: number; lng: number }): void {
     const marker = this.markersMap[`velo-${idVelo}`];
     if (marker && marker instanceof L.Marker) {
@@ -251,31 +225,12 @@ export class MapComponent implements OnInit {
     }
   }
 
-  public startMovingVelo(idVelo: number | undefined, destination: PointInteret): void {
-    if (!idVelo) {
-      console.error('ID du vélo manquant.');
-      return;
-    }
-
-    const velo = this.velos.find(v => v.idVelo === idVelo);
-    if (velo) {
-      const startPoint = this.pointsInteret.find(p => p.lat === velo.position?.lat && p.lng === velo.position?.lng);
-
-      if (!startPoint) {
-        console.error('Point de départ introuvable.');
-        return;
-      }
-
-      const route = this.calculateRoute(startPoint, destination);
-      console.log(`Route calculée pour le vélo ${idVelo}:`, route);
-      this.moveVelo(velo, route);
-    } else {
-      console.error(`Vélo avec ID ${idVelo} introuvable.`);
-    }
-  }
-
   private calculateRoute(start: PointInteret, end: PointInteret): { lat: number; lng: number }[] {
-    const queue: string[][] = [[start.nom]]; // Utilise le nom pour rechercher les chemins
+    const blockedSegments = this.incidents
+      .filter(incident => incident.blocked)
+      .map(incident => `${incident.startPoint}->${incident.endPoint}`);
+
+    const queue: string[][] = [[start.nom]];
     const visited: Set<string> = new Set();
 
     while (queue.length > 0) {
@@ -283,14 +238,13 @@ export class MapComponent implements OnInit {
       const lastNode = path[path.length - 1];
 
       if (lastNode === end.nom) {
-        console.log(`Chemin trouvé: ${path}`);
-        return this.getLatLngPath(path); // Convertit les noms en lat/lng
+        return this.getLatLngPath(path);
       }
 
       if (!visited.has(lastNode)) {
         visited.add(lastNode);
 
-        const neighbors = this.getAllNeighbors(lastNode);
+        const neighbors = this.getAllNeighbors(lastNode).filter(neighbor => !blockedSegments.includes(`${lastNode}->${neighbor}`));
 
         for (const neighbor of neighbors) {
           if (!visited.has(neighbor)) {
@@ -327,5 +281,155 @@ export class MapComponent implements OnInit {
         return point ? { lat: point.lat, lng: point.lng } : null;
       })
       .filter((p): p is { lat: number; lng: number } => p !== null);
+  }
+
+  public startMovingVelo(idVelo: number | undefined, destination: PointInteret): void {
+    if (!idVelo) {
+      console.error('ID du vélo manquant.');
+      return;
+    }
+
+    const velo = this.velos.find(v => v.idVelo === idVelo);
+    if (velo) {
+      const startPoint = this.pointsInteret.find(p => p.lat === velo.position?.lat && p.lng === velo.position?.lng);
+
+      if (!startPoint) {
+        console.error('Point de départ introuvable.');
+        return;
+      }
+
+      const route = this.calculateRoute(startPoint, destination);
+      console.log(`Route calculée pour le vélo ${idVelo}:`, route);
+
+      this.moveVelo(velo, route);
+    } else {
+      console.error(`Vélo avec ID ${idVelo} introuvable.`);
+    }
+  }
+
+  private moveVelo(velo: Velo, path: { lat: number; lng: number }[]): void {
+    if (path.length === 0) {
+      console.error('Aucun chemin fourni pour le vélo.');
+      return;
+    }
+
+    console.log(`Déplacement du vélo ${velo.idVelo} sur ${path.length} points.`);
+
+    let index = 0;
+    const interval = setInterval(() => {
+      if (index < path.length) {
+        const position = path[index];
+        console.log(`Vélo ${velo.idVelo} se déplace à ${position.lat}, ${position.lng}`);
+
+        // Mettre à jour la position et réduire l'autonomie
+        velo.position = position;
+        this.updateVeloMarker(velo.idVelo!, position);
+
+        // Réduire l'autonomie tous les 20 arrêts
+        if (index % 20 === 0) {
+          this.reduireAutonomie(velo, 1);
+        }
+
+        // Gestion de la charge et des arrêts
+        const arret = this.pointsInteret.find(p => p.lat === position.lat && p.lng === position.lng);
+        if (arret && !arret.poubelleVidee) {
+          this.viderPoubelle(velo, arret);
+        }
+
+        // Vérifier l'autonomie ou la capacité restante
+        if (velo.autonomie <= 2 || velo.capaciteRestante <= 0) {
+          console.log(`Vélo ${velo.idVelo} retourne à la déchèterie.`);
+          clearInterval(interval);
+          this.retourDecheterie(velo);
+          return;
+        }
+
+        index++;
+      } else {
+        clearInterval(interval);
+        console.log(`Vélo ${velo.idVelo} est arrivé à destination.`);
+      }
+    }, 1000);
+  }
+
+  private reduireAutonomie(velo: Velo, perte: number): void {
+    velo.autonomie -= perte;
+    console.log(`Autonomie du vélo ${velo.idVelo}: ${velo.autonomie} km.`);
+  }
+
+  private viderPoubelle(velo: Velo, arret: PointInteret): void {
+    const chargeAjoutee = 50; // 50 kg par poubelle vidée
+    if (velo.capaciteRestante >= chargeAjoutee) {
+      velo.capaciteRestante -= chargeAjoutee;
+      arret.poubelleVidee = true; // Mettre à jour l'état de l'arrêt
+      console.log(`Vélo ${velo.idVelo} a vidé la poubelle à l'arrêt ${arret.nom}. Charge restante : ${velo.capaciteRestante} kg.`);
+    } else {
+      console.warn(`Vélo ${velo.idVelo} : capacité maximale atteinte. Retour à la déchèterie nécessaire.`);
+    }
+  }
+
+  private retourDecheterie(velo: Velo): void {
+    const decheterie = this.pointsInteret.find(p => p.nom === "Porte d'Ivry");
+    if (decheterie) {
+      const positionAsPointInteret: PointInteret = {
+        idArret: 0, // Valeur fictive ou calculée
+        nom: 'Position actuelle', // Description temporaire
+        poubelleVidee: false, // Propriété par défaut
+        lat: velo.position!.lat,
+        lng: velo.position!.lng,
+      };
+
+      const routeRetour = this.calculateRoute(positionAsPointInteret, decheterie);
+      this.moveVelo(velo, routeRetour);
+
+      // Réinitialisation après retour
+      velo.autonomie = 50; // Réinitialiser l'autonomie
+      velo.capaciteRestante = 200; // Vider le vélo
+      console.log(`Vélo ${velo.idVelo} a été rechargé et vidé à la déchèterie.`);
+    } else {
+      console.error('Déchèterie introuvable.');
+    }
+  }
+
+  newIncident: Incident = { startPoint: '', endPoint: '', blocked: true };
+  incidents: Incident[] = [];
+
+  submitIncident(): void {
+    if (!this.newIncident.startPoint || !this.newIncident.endPoint) {
+      alert('Veuillez sélectionner un départ et une arrivée.');
+      return;
+    }
+
+    if (this.newIncident.startPoint === this.newIncident.endPoint) {
+      alert("Le départ et l'arrivée ne peuvent pas être les mêmes.");
+      return;
+    }
+
+    this.incidentService.addIncident(this.newIncident).subscribe(() => {
+      alert('Incident signalé.');
+      this.loadIncidents(); // Recharger la liste après l'ajout
+      this.newIncident = { startPoint: '', endPoint: '', blocked: true }; // Réinitialiser le formulaire
+    });
+  }
+
+  loadIncidents(): void {
+    this.incidentService.getActiveIncidents().subscribe((data: Incident[]) => {
+      this.incidents = data;
+    });
+  }
+
+  resolveIncident(id: number): void {
+    if (!id) {
+      console.error("ID de l'incident non défini.");
+      return;
+    }
+
+    this.incidentService.resolveIncident(id).subscribe({
+      next: () => {
+        alert('Incident résolu.');
+        this.loadIncidents(); // Recharger les incidents
+      },
+      error: (err: any) => console.error("Erreur lors de la résolution de l'incident :", err),
+    });
   }
 }

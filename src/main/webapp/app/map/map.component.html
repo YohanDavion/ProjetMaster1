@@ -17,3 +17,26 @@
     </button>
   </div>
 </div>
+
+<h3>Ajouter un Incident</h3>
+<form (ngSubmit)="submitIncident()">
+  <label for="startPoint">Départ :</label>
+  <select id="startPoint" [(ngModel)]="newIncident.startPoint" name="startPoint" required>
+    <option *ngFor="let point of pointsInteret" [value]="point.nom">{{ point.nom }}</option>
+  </select>
+
+  <label for="endPoint">Arrivée :</label>
+  <select id="endPoint" [(ngModel)]="newIncident.endPoint" name="endPoint" required>
+    <option *ngFor="let point of pointsInteret" [value]="point.nom">{{ point.nom }}</option>
+  </select>
+
+  <button type="submit">Signaler Incident</button>
+</form>
+
+<h3>Incidents Actifs</h3>
+<ul>
+  <li *ngFor="let incident of incidents" [class.blocked]="incident.blocked">
+    {{ incident.startPoint }} -> {{ incident.endPoint }}
+    <button *ngIf="incident.blocked && incident.id !== undefined" (click)="resolveIncident(incident.id!)">Résoudre</button>
+  </li>
+</ul>

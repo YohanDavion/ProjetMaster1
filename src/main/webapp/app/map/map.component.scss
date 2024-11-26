@@ -19,3 +19,12 @@
   z-index: 1000; // Ensure the button is above the map
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); // Add a shadow for better visibility
 }
+
+.blocked {
+  color: white;
+  background-color: #ff4d4d; /* Rouge */
+  padding: 5px;
+  margin-bottom: 5px;
+  border-radius: 5px;
+  display: inline-block;
+}
