@@ -3,6 +3,7 @@ package com.limayrac.velopoubelle.web.rest;
 import com.limayrac.velopoubelle.domain.Incident;
 import com.limayrac.velopoubelle.service.IncidentService;
 import java.util.List;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,9 +16,10 @@ public class IncidentController {
         this.incidentService = incidentService;
     }
 
-    @GetMapping
-    public List<Incident> getActiveIncidents() {
-        return incidentService.getActiveIncidents();
+    @GetMapping("/active")
+    public ResponseEntity<List<Incident>> getActiveIncidents() {
+        List<Incident> activeIncidents = incidentService.getActiveIncidents();
+        return ResponseEntity.ok(activeIncidents);
     }
 
     @PostMapping
@@ -25,7 +27,7 @@ public class IncidentController {
         return incidentService.addIncident(incident);
     }
 
-    @PatchMapping("/{id}/resolve")
+    @PutMapping("/{id}/resolve")
     public Incident resolveIncident(@PathVariable Long id) {
         return incidentService.resolveIncident(id);
     }

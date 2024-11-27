@@ -113,11 +113,9 @@ export class MapComponent implements OnInit {
     });
   }
 
-  private reloadMarkers(): void {
-    this.loadPointsInteret(); // Recharge les points pour actualiser leur statut
-  }
-
   private drawRoads(): void {
+    console.log('Incidents actifs :', this.incidents);
+
     Object.keys(routes).forEach(road => {
       const points = routes[road]
         .map(name => {
@@ -126,22 +124,41 @@ export class MapComponent implements OnInit {
         })
         .filter((p): p is [number, number] => p !== null);
 
-      if (points.length > 1) {
-        const polyline = L.polyline(points, { color: 'grey', weight: 4 }).addTo(this.map);
-        this.allPolylines.push(polyline);
+      console.log(`Route "${road}" segments :`, points);
 
-        polyline.on('click', () => {
-          this.highlightRoad(polyline);
-        });
+      if (points.length > 1) {
+        for (let i = 0; i < points.length - 1; i++) {
+          const startPoint = points[i];
+          const endPoint = points[i + 1];
+
+          const isBlocked = this.isSegmentBlocked(startPoint, endPoint);
+
+          console.log(`Segment : ${startPoint} -> ${endPoint}, Bloqué : ${isBlocked}`);
+
+          const polyline = L.polyline([startPoint, endPoint], {
+            color: isBlocked ? 'red' : 'grey',
+            weight: 4,
+          }).addTo(this.map);
+
+          this.allPolylines.push(polyline);
+        }
       }
     });
   }
 
-  private highlightRoad(polyline: L.Polyline): void {
-    this.allPolylines.forEach(line => this.map.removeLayer(line));
-    this.selectedPolyline = polyline;
-    polyline.setStyle({ color: 'blue' });
-    this.map.addLayer(polyline);
+  private isSegmentBlocked(startPoint: [number, number], endPoint: [number, number]): boolean {
+    return this.incidents.some(incident => {
+      const start = this.pointsInteret.find(p => p.nom === incident.startPoint);
+      const end = this.pointsInteret.find(p => p.nom === incident.endPoint);
+
+      return (
+        start?.lat === startPoint[0] &&
+        start?.lng === startPoint[1] &&
+        end?.lat === endPoint[0] &&
+        end?.lng === endPoint[1] &&
+        incident.blocked
+      );
+    });
   }
 
   public deselectRoute(): void {
@@ -244,7 +261,9 @@ export class MapComponent implements OnInit {
       if (!visited.has(lastNode)) {
         visited.add(lastNode);
 
-        const neighbors = this.getAllNeighbors(lastNode).filter(neighbor => !blockedSegments.includes(`${lastNode}->${neighbor}`));
+        const neighbors = this.getAllNeighbors(lastNode).filter(neighbor => {
+          return !blockedSegments.includes(`${lastNode}->${neighbor}`);
+        });
 
         for (const neighbor of neighbors) {
           if (!visited.has(neighbor)) {
@@ -415,6 +434,7 @@ export class MapComponent implements OnInit {
   loadIncidents(): void {
     this.incidentService.getActiveIncidents().subscribe((data: Incident[]) => {
       this.incidents = data;
+      this.drawRoads(); // Redessiner les routes après avoir chargé les incidents
     });
   }
 

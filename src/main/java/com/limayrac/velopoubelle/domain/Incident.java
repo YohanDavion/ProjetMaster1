@@ -1,7 +1,6 @@
 package com.limayrac.velopoubelle.domain;
 
 import jakarta.persistence.*;
-import java.time.*;
 
 @Entity
 @Table(name = "incident") // Assurez-vous que le nom est en minuscules
@@ -20,11 +19,11 @@ public class Incident {
     @Column(name = "blocked", nullable = false)
     private boolean blocked;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "created_at")
+    private String createdAt;
 
     @Column(name = "resolved_at")
-    private LocalDateTime resolvedAt;
+    private String resolvedAt;
 
     // Getters et Setters
     public Long getId() {
@@ -59,19 +58,19 @@ public class Incident {
         this.blocked = blocked;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public String getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
     }
 
-    public LocalDateTime getResolvedAt() {
+    public String getResolvedAt() {
         return resolvedAt;
     }
 
-    public void setResolvedAt(LocalDateTime resolvedAt) {
+    public void setResolvedAt(String resolvedAt) {
         this.resolvedAt = resolvedAt;
     }
 }

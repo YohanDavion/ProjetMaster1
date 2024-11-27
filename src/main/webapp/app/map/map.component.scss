@@ -21,10 +21,11 @@
 }
 
 .blocked {
-  color: white;
-  background-color: #ff4d4d; /* Rouge */
-  padding: 5px;
-  margin-bottom: 5px;
-  border-radius: 5px;
-  display: inline-block;
+  color: red;
+  font-weight: bold;
+}
+
+.leaflet-polyline-blocked {
+  stroke: red;
+  stroke-width: 4;
 }

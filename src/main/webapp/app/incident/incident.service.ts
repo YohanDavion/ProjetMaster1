@@ -16,10 +16,10 @@ export class IncidentService {
   }
 
   addIncident(incident: Incident): Observable<Incident> {
-    return this.http.post<Incident>(`${this.apiUrl}`, incident);
+    return this.http.post<Incident>(this.apiUrl, incident);
   }
 
-  resolveIncident(id: number): Observable<void> {
-    return this.http.put<void>(`${this.apiUrl}/${id}/resolve`, {});
+  resolveIncident(id: number): Observable<Incident> {
+    return this.http.put<Incident>(`http://localhost:9000/api/incidents/${id}/resolve`, null);
   }
 }

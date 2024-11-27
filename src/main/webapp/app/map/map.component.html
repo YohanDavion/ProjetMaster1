@@ -37,6 +37,6 @@
 <ul>
   <li *ngFor="let incident of incidents" [class.blocked]="incident.blocked">
     {{ incident.startPoint }} -> {{ incident.endPoint }}
-    <button *ngIf="incident.blocked && incident.id !== undefined" (click)="resolveIncident(incident.id!)">Résoudre</button>
+    <button *ngIf="incident.blocked && incident.id !== undefined" (click)="resolveIncident(incident.id)">Résoudre</button>
   </li>
 </ul>

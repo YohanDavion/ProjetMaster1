@@ -31,9 +31,9 @@
       <td>{{ velo.idVelo }}</td>
       <td>
         <div class="jauge-container">
-          <div class="jauge" [ngStyle]="{ width: velo.autonomie + '%' }"></div>
+          <div class="jauge" [ngStyle]="{ width: (velo.autonomie / 50) * 100 + '%' }"></div>
         </div>
-        <span class="jauge-text">{{ velo.autonomie }}%</span>
+        <span class="jauge-text">{{ velo.autonomie }}km</span>
       </td>
       <td>
         <div class="jauge-container">
