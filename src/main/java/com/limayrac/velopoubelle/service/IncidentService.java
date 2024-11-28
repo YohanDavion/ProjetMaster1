@@ -19,6 +19,10 @@ public class IncidentService {
         return incidentRepository.findByBlockedTrue();
     }
 
+    public List<Incident> findAll() {
+        return incidentRepository.findAll();
+    }
+
     public Incident addIncident(Incident incident) {
         incident.setCreatedAt(String.valueOf(System.currentTimeMillis()));
         incident.setResolvedAt(null); // S'assurer qu'il n'est pas marqué comme résolu

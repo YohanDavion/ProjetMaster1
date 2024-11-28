@@ -11,6 +11,7 @@ import { MapComponent } from './map/map.component';
 import { RouteCalculatorComponent } from './route-calculator/route-calculator.component';
 import { VeloComponent } from './velo/velo.component';
 import { ListeVeloComponent } from './velos/liste-velo/liste-velo.component';
+import { IncidentListComponent } from './incident/incident-list/incident-list.component';
 
 const routes: Routes = [
   {
@@ -59,6 +60,10 @@ const routes: Routes = [
     path: 'liste-velo',
     component: ListeVeloComponent,
     title: 'Liste des Vélos',
+  },
+  {
+    path: 'incidents',
+    component: IncidentListComponent,
   },
   {
     path: '',

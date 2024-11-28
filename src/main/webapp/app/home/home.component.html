@@ -1,25 +1,31 @@
 <div class="container">
-  <h1>DashBoard Gestionnaire Réseau</h1>
-  <div style="display: flex">
+  <h1>Dashboard Gestionnaire Réseau</h1>
+  <div class="cards-wrapper">
+    <!-- Carte pour le nombre total de vélos -->
     <p-card>
-      <i class="pi pi-users" style="font-size: 2rem; margin-right: 15px"></i>
-      <label>Vélo en Circulation : {{ this.nbVeloCirculation }}</label>
-      <p-button label="Gérer" (click)="goToPage('liste-velo')" />
+      <div class="card-content">
+        <i class="pi pi-bicycle icon"></i>
+        <label>Nombre total de vélos : {{ nbVelos }}</label>
+        <p-button label="Voir les vélos" (click)="goToPage('velo')" />
+      </div>
     </p-card>
+
+    <!-- Carte pour le nombre total d'incidents -->
     <p-card>
-      <i class="pi pi-folder-open" style="font-size: 2rem; margin-right: 15px"></i>
-      <label>Vélo Hors-Circulation : {{ this.nbVeloHorsCirculation }}</label>
-      <p-button label="Gérer" />
+      <div class="card-content">
+        <i class="pi pi-exclamation-triangle icon warning"></i>
+        <label>Nombre total d'incidents : {{ nbIncidents }}</label>
+        <p-button severity="warning" label="Voir les incidents" (click)="goToPage('incidents')" />
+      </div>
     </p-card>
+
+    <!-- Nouvelle Carte pour un raccourci vers la carte -->
     <p-card>
-      <i class="pi pi-euro" style="font-size: 2rem; margin-right: 15px"></i>
-      <label>Incidents : {{ this.nbIncident }}</label>
-      <p-button severity="warning" label="Gérer" />
-    </p-card>
-    <p-card>
-      <i class="pi pi-arrow-right-arrow-left" style="font-size: 2rem; margin-right: 15px"></i>
-      <label>Avancement Tourné : {{ this.nbPourcentAvancementTourne }} %</label>
-      <p-button severity="info" label="Infos" />
+      <div class="card-content">
+        <i class="pi pi-map icon success"></i>
+        <label>Carte des Arrêts</label>
+        <p-button severity="success" label="Voir la Carte" (click)="goToPage('map')" />
+      </div>
     </p-card>
   </div>
 </div>

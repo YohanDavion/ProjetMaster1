@@ -36,7 +36,6 @@
 <h3>Incidents Actifs</h3>
 <ul>
   <li *ngFor="let incident of incidents" [class.blocked]="incident.blocked">
-    {{ incident.startPoint }} -> {{ incident.endPoint }}
-    <button *ngIf="incident.blocked && incident.id !== undefined" (click)="resolveIncident(incident.id)">Résoudre</button>
+    {{ incident.startPoint }} -> {{ incident.endPoint }} Etat : {{ incident.blocked }}
   </li>
 </ul>

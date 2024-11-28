@@ -1,0 +1,63 @@
+<div class="container">
+  <h2>Liste des incidents</h2>
+
+  <!-- Filtrer les incidents -->
+  <div>
+    <label for="filter">Filtrer :</label>
+    <select id="filter" [(ngModel)]="filter" (change)="applyFilter()">
+      <option value="all">Tous</option>
+      <option value="active">Actifs</option>
+      <option value="resolved">Résolus</option>
+    </select>
+  </div>
+
+  <!-- Tableau des incidents -->
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Départ</th>
+        <th>Arrivée</th>
+        <th>Bloqué</th>
+        <th>Créé</th>
+        <th>Résolu</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let incident of filteredIncidents">
+        <td>{{ incident.id }}</td>
+        <td>{{ incident.startPoint }}</td>
+        <td>{{ incident.endPoint }}</td>
+        <td>{{ incident.blocked ? 'Oui' : 'Non' }}</td>
+        <td>{{ incident.createdAt | date: 'short' }}</td>
+        <td>{{ incident.resolvedAt ? (incident.resolvedAt | date: 'short') : 'Non résolu' }}</td>
+        <td>
+          <button *ngIf="incident.blocked && incident.id !== undefined" class="btn btn-primary" (click)="resolveIncident(incident.id)">
+            Résoudre
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Formulaire pour ajouter un incident -->
+  <div class="form-container">
+    <h3>Ajouter un nouvel incident</h3>
+    <form (ngSubmit)="addIncident()">
+      <div>
+        <label for="startPoint">Départ :</label>
+        <select id="startPoint" [(ngModel)]="newIncident.startPoint" name="startPoint" required>
+          <option *ngFor="let arret of arrets" [value]="arret">{{ arret }}</option>
+        </select>
+      </div>
+      <div>
+        <label for="endPoint">Arrivée :</label>
+        <select id="endPoint" [(ngModel)]="newIncident.endPoint" name="endPoint" required>
+          <option *ngFor="let arret of arrets" [value]="arret">{{ arret }}</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-success">Ajouter</button>
+    </form>
+  </div>
+</div>

@@ -22,6 +22,12 @@ public class IncidentController {
         return ResponseEntity.ok(activeIncidents);
     }
 
+    @GetMapping
+    public ResponseEntity<List<Incident>> getAllIncidents() {
+        List<Incident> incidents = incidentService.findAll();
+        return ResponseEntity.ok().body(incidents);
+    }
+
     @PostMapping
     public Incident addIncident(@RequestBody Incident incident) {
         return incidentService.addIncident(incident);

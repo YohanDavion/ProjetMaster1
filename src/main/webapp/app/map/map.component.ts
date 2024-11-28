@@ -435,15 +435,10 @@ export class MapComponent implements OnInit {
     this.incidentService.resolveIncident(id).subscribe({
       next: () => {
         alert('Incident résolu.');
-        this.loadIncidents(); // Recharge les incidents
+        this.loadIncidents(); // Recharge les incidents après résolution
       },
       error: (err: any) => {
         console.error("Erreur lors de la résolution de l'incident :", err);
-        if (err.status === 401) {
-          alert('Votre session a expiré. Veuillez vous reconnecter.');
-        } else {
-          alert("Une erreur est survenue lors de la résolution de l'incident.");
-        }
       },
     });
   }
