@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import * as L from 'leaflet';
 import { routes } from '../points-interet';
-import { ArretService, PointInteret } from '../arret.service'; // Importez l'interface et le service
+import { ArretService, PointInteret } from '../arret.service';
 import { Velo } from 'app/velo/velo.model';
-import { VeloService } from '../velo/velo.service'; // Assurez-vous que le chemin est correct
+import { VeloService } from '../velo/velo.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Incident } from 'app/incident/incident.model';
@@ -11,44 +11,45 @@ import { IncidentService } from 'app/incident/incident.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule], // Import nécessaire pour les directives Angular telles que *ngFor
+  imports: [CommonModule, FormsModule],
   selector: 'app-map',
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss'],
 })
 export class MapComponent implements OnInit {
-  public startPoint: PointInteret | null = null; // Point de départ sélectionné
-  public endPoint: PointInteret | null = null; // Point d'arrivée sélectionné
+  public startPoint: PointInteret | null = null;
+  public endPoint: PointInteret | null = null;
   private map!: L.Map;
   private markersMap: { [key: string]: L.Marker | L.CircleMarker } = {};
   private selectedMarker: L.CircleMarker | null = null;
   private selectedPolyline: L.Polyline | null = null;
   private allPolylines: L.Polyline[] = [];
   public pointsInteret: (PointInteret & { lat: number; lng: number })[] = [];
-  public velos: Velo[] = []; // Liste des vélos pour l'affichage
+  public velos: Velo[] = [];
+  public incidents: Incident[] = [];
 
   constructor(
     private arretService: ArretService,
     private veloService: VeloService,
-    private incidentService: IncidentService, // Ajoutez ici si manquant
+    private incidentService: IncidentService,
   ) {}
 
   ngOnInit(): void {
     this.initMap();
     this.loadPointsInteret();
     this.addVeloMarkers();
-    this.loadIncidents(); // Charger les incidents actifs au démarrage
+    this.loadIncidents();
   }
 
   private initMap(): void {
     this.map = L.map('map', {
       center: [48.8566, 2.3522],
       zoom: 12,
-      minZoom: 12, // Niveau de zoom minimum
-      maxZoom: 19, // Niveau de zoom maximum
+      minZoom: 12,
+      maxZoom: 19,
       maxBounds: [
-        [48.5, 2.0], // Limite sud-ouest
-        [49.0, 2.7], // Limite nord-est
+        [48.5, 2.0],
+        [49.0, 2.7],
       ],
     });
 
@@ -70,11 +71,7 @@ export class MapComponent implements OnInit {
         .map(arret => {
           if (arret.position) {
             const { lat, lng } = this.parsePosition(arret.position);
-            return {
-              ...arret, // Inclut toutes les propriétés de l'objet Arret
-              lat,
-              lng,
-            };
+            return { ...arret, lat, lng };
           }
           return null;
         })
@@ -84,38 +81,23 @@ export class MapComponent implements OnInit {
       this.drawRoads();
     });
   }
+
   private addMarkers(): void {
     this.pointsInteret.forEach(point => {
-      let markerOptions: L.CircleMarkerOptions = {
-        radius: 5,
-        color: point.poubelleVidee ? 'grey' : 'red', // Bleu si vidé, rouge sinon
-        fillOpacity: 0.5,
+      const markerOptions: L.CircleMarkerOptions = {
+        radius: point.nom === "Porte d'Ivry" ? 10 : 5,
+        color: point.nom === "Porte d'Ivry" ? 'green' : point.poubelleVidee ? 'grey' : 'red',
+        fillOpacity: point.nom === "Porte d'Ivry" ? 0.8 : 0.5,
       };
-
-      // Style spécial pour "Porte d'Ivry"
-      if (point.nom === "Porte d'Ivry") {
-        markerOptions = {
-          radius: 10, // Rayon plus grand pour mettre en valeur
-          color: 'green', // Couleur différente
-          fillOpacity: 0.8, // Plus opaque pour attirer l'attention
-        };
-      }
 
       const marker = L.circleMarker([point.lat, point.lng], markerOptions).addTo(this.map);
 
       marker.bindPopup(`<b>${point.nom}</b><br>Poubelle : ${point.poubelleVidee ? 'Vide' : 'Pleine'}`);
-
-      marker.on('click', () => {
-        this.highlightMarker(point.nom);
-      });
-
       this.markersMap[point.nom] = marker;
     });
   }
 
   private drawRoads(): void {
-    console.log('Incidents actifs :', this.incidents);
-
     Object.keys(routes).forEach(road => {
       const points = routes[road]
         .map(name => {
@@ -124,123 +106,81 @@ export class MapComponent implements OnInit {
         })
         .filter((p): p is [number, number] => p !== null);
 
-      console.log(`Route "${road}" segments :`, points);
-
       if (points.length > 1) {
         for (let i = 0; i < points.length - 1; i++) {
-          const startPoint = points[i];
-          const endPoint = points[i + 1];
-
-          const isBlocked = this.isSegmentBlocked(startPoint, endPoint);
-
-          console.log(`Segment : ${startPoint} -> ${endPoint}, Bloqué : ${isBlocked}`);
-
-          const polyline = L.polyline([startPoint, endPoint], {
-            color: isBlocked ? 'red' : 'grey',
+          const polyline = L.polyline([points[i], points[i + 1]], {
+            color: 'grey',
             weight: 4,
           }).addTo(this.map);
-
           this.allPolylines.push(polyline);
         }
       }
     });
+
+    this.updateBlockedSegments();
   }
 
-  private isSegmentBlocked(startPoint: [number, number], endPoint: [number, number]): boolean {
-    return this.incidents.some(incident => {
-      const start = this.pointsInteret.find(p => p.nom === incident.startPoint);
-      const end = this.pointsInteret.find(p => p.nom === incident.endPoint);
-
-      return (
-        start?.lat === startPoint[0] &&
-        start?.lng === startPoint[1] &&
-        end?.lat === endPoint[0] &&
-        end?.lng === endPoint[1] &&
-        incident.blocked
-      );
+  loadIncidents(): void {
+    this.incidentService.getActiveIncidents().subscribe((data: Incident[]) => {
+      console.log('Incidents récupérés :', data);
+      this.incidents = data;
+      this.updateBlockedSegments(); // Met à jour les segments bloqués
     });
   }
 
-  public deselectRoute(): void {
-    if (this.selectedPolyline) {
-      this.selectedPolyline.setStyle({ color: 'grey' });
-      this.selectedPolyline = null;
+  submitIncident(): void {
+    if (!this.newIncident.startPoint || !this.newIncident.endPoint) {
+      alert('Veuillez sélectionner un départ et une arrivée.');
+      return;
     }
-    this.allPolylines.forEach(line => this.map.addLayer(line));
-  }
 
-  public highlightMarker(pointName: string): void {
-    const marker = this.markersMap[pointName];
-    if (marker) {
-      if (this.selectedMarker) {
-        if (this.selectedMarker instanceof L.CircleMarker) {
-          this.selectedMarker.setStyle({ color: 'red' });
-        }
-      }
-
-      if (marker instanceof L.CircleMarker) {
-        marker.setStyle({ color: 'blue' });
-      }
-
-      marker.openPopup();
-      this.selectedMarker = marker instanceof L.CircleMarker ? marker : null;
-      this.map.panTo(marker.getLatLng());
+    if (this.newIncident.startPoint === this.newIncident.endPoint) {
+      alert("Le départ et l'arrivée ne peuvent pas être les mêmes.");
+      return;
     }
-  }
 
-  private addVeloMarkers(): void {
-    this.veloService.getVelosWithPosition().subscribe(velos => {
-      this.velos = velos; // Stocker la liste des vélos
-      velos.forEach(velo => {
-        if (velo.position) {
-          const { lat, lng } = velo.position; // Suppression de parsePosition
-          const marker = L.marker([lat, lng], {
-            icon: L.icon({
-              iconUrl: '/content/images/velo.ico', // Assurez-vous que ce chemin est correct
-              iconSize: [32, 32],
-            }),
-          }).addTo(this.map);
-
-          marker.bindPopup(
-            `<b>Vélo ${velo.idVelo}</b><br>Autonomie: ${velo.autonomie} km<br>Capacité: ${velo.capacite} kg<br>État: ${velo.etat}`,
-          );
-          this.markersMap[`velo-${velo.idVelo}`] = marker; // Stocker les marqueurs par ID de vélo
-        }
-      });
+    this.incidentService.addIncident(this.newIncident).subscribe(() => {
+      alert('Incident signalé.');
+      this.loadIncidents(); // Recharger la liste après l'ajout
+      this.newIncident = { startPoint: '', endPoint: '', blocked: true }; // Réinitialiser le formulaire
     });
   }
 
-  private getPath(start: { lat: number; lng: number }, end: PointInteret & { lat: number; lng: number }): { lat: number; lng: number }[] {
-    const path: { lat: number; lng: number }[] = [];
-    const route = routes['default']; // Vérifier si une route "default" existe
-
-    if (route) {
-      route.forEach(name => {
-        const point = this.pointsInteret.find(p => p.nom === name);
-        if (point) {
-          path.push({ lat: point.lat, lng: point.lng });
-        }
-      });
+  public startMovingVelo(idVelo: number | undefined, destination: PointInteret): void {
+    if (!idVelo) {
+      console.error('ID du vélo manquant.');
+      return;
     }
 
-    if (path.length === 0) {
-      // Si aucun chemin trouvé, utiliser un chemin direct
-      return [start, { lat: end.lat, lng: end.lng }];
-    }
+    const velo = this.velos.find(v => v.idVelo === idVelo);
+    if (velo) {
+      const startPoint = this.pointsInteret.find(p => p.lat === velo.position?.lat && p.lng === velo.position?.lng);
 
-    path.push({ lat: end.lat, lng: end.lng });
-    return path;
-  }
+      if (!startPoint) {
+        console.error('Point de départ introuvable.');
+        return;
+      }
 
-  private updateVeloMarker(idVelo: number, position: { lat: number; lng: number }): void {
-    const marker = this.markersMap[`velo-${idVelo}`];
-    if (marker && marker instanceof L.Marker) {
-      marker.setLatLng([position.lat, position.lng]); // Met à jour la position du marqueur
-      this.map.panTo([position.lat, position.lng], { animate: true }); // Centre la carte sur la position mise à jour
+      const route = this.calculateRoute(startPoint, destination);
+
+      if (
+        route.some((point, index) => {
+          if (index === route.length - 1) return false;
+          const nextPoint = route[index + 1];
+          return this.isSegmentBlocked([point.lat, point.lng], [nextPoint.lat, nextPoint.lng]);
+        })
+      ) {
+        alert('Impossible de se déplacer : segment bloqué.');
+        return;
+      }
+
+      this.moveVelo(velo, route);
     } else {
-      console.error(`Marqueur pour le vélo ${idVelo} introuvable.`);
+      console.error(`Vélo avec ID ${idVelo} introuvable.`);
     }
   }
+
+  newIncident: Incident = { startPoint: '', endPoint: '', blocked: true };
 
   private calculateRoute(start: PointInteret, end: PointInteret): { lat: number; lng: number }[] {
     const blockedSegments = this.incidents
@@ -302,30 +242,6 @@ export class MapComponent implements OnInit {
       .filter((p): p is { lat: number; lng: number } => p !== null);
   }
 
-  public startMovingVelo(idVelo: number | undefined, destination: PointInteret): void {
-    if (!idVelo) {
-      console.error('ID du vélo manquant.');
-      return;
-    }
-
-    const velo = this.velos.find(v => v.idVelo === idVelo);
-    if (velo) {
-      const startPoint = this.pointsInteret.find(p => p.lat === velo.position?.lat && p.lng === velo.position?.lng);
-
-      if (!startPoint) {
-        console.error('Point de départ introuvable.');
-        return;
-      }
-
-      const route = this.calculateRoute(startPoint, destination);
-      console.log(`Route calculée pour le vélo ${idVelo}:`, route);
-
-      this.moveVelo(velo, route);
-    } else {
-      console.error(`Vélo avec ID ${idVelo} introuvable.`);
-    }
-  }
-
   private moveVelo(velo: Velo, path: { lat: number; lng: number }[]): void {
     if (path.length === 0) {
       console.error('Aucun chemin fourni pour le vélo.');
@@ -343,6 +259,17 @@ export class MapComponent implements OnInit {
         // Mettre à jour la position et réduire l'autonomie
         velo.position = position;
         this.updateVeloMarker(velo.idVelo!, position);
+
+        // Vérifier les segments bloqués en cours de déplacement
+        if (index < path.length - 1) {
+          const nextPosition = path[index + 1];
+          if (this.isSegmentBlocked([position.lat, position.lng], [nextPosition.lat, nextPosition.lng])) {
+            console.warn(`Vélo ${velo.idVelo} bloqué sur un segment interdit.`);
+            alert('Segment bloqué détecté. Déplacement interrompu.');
+            clearInterval(interval);
+            return;
+          }
+        }
 
         // Réduire l'autonomie tous les 20 arrêts
         if (index % 20 === 0) {
@@ -391,9 +318,9 @@ export class MapComponent implements OnInit {
     const decheterie = this.pointsInteret.find(p => p.nom === "Porte d'Ivry");
     if (decheterie) {
       const positionAsPointInteret: PointInteret = {
-        idArret: 0, // Valeur fictive ou calculée
-        nom: 'Position actuelle', // Description temporaire
-        poubelleVidee: false, // Propriété par défaut
+        idArret: 0,
+        nom: 'Position actuelle',
+        poubelleVidee: false,
         lat: velo.position!.lat,
         lng: velo.position!.lng,
       };
@@ -410,31 +337,90 @@ export class MapComponent implements OnInit {
     }
   }
 
-  newIncident: Incident = { startPoint: '', endPoint: '', blocked: true };
-  incidents: Incident[] = [];
-
-  submitIncident(): void {
-    if (!this.newIncident.startPoint || !this.newIncident.endPoint) {
-      alert('Veuillez sélectionner un départ et une arrivée.');
-      return;
+  public deselectRoute(): void {
+    if (this.selectedPolyline) {
+      this.selectedPolyline.setStyle({ color: 'grey' });
+      this.selectedPolyline = null;
     }
+    this.allPolylines.forEach(line => this.map.addLayer(line));
+  }
 
-    if (this.newIncident.startPoint === this.newIncident.endPoint) {
-      alert("Le départ et l'arrivée ne peuvent pas être les mêmes.");
-      return;
-    }
+  private updateBlockedSegments(): void {
+    console.log('Mise à jour des segments bloqués...');
 
-    this.incidentService.addIncident(this.newIncident).subscribe(() => {
-      alert('Incident signalé.');
-      this.loadIncidents(); // Recharger la liste après l'ajout
-      this.newIncident = { startPoint: '', endPoint: '', blocked: true }; // Réinitialiser le formulaire
+    this.incidents.forEach(incident => {
+      const start = this.pointsInteret.find(p => p.nom === incident.startPoint);
+      const end = this.pointsInteret.find(p => p.nom === incident.endPoint);
+
+      if (start && end) {
+        const blockedSegment = this.allPolylines.find(polyline => {
+          const latLngs = polyline.getLatLngs() as L.LatLng[];
+          return (
+            (latLngs[0].lat === start.lat && latLngs[0].lng === start.lng && latLngs[1].lat === end.lat && latLngs[1].lng === end.lng) ||
+            (latLngs[0].lat === end.lat && latLngs[0].lng === end.lng && latLngs[1].lat === start.lat && latLngs[1].lng === start.lng)
+          );
+        });
+
+        // Modifier la couleur si le segment est trouvé
+        if (blockedSegment) {
+          blockedSegment.setStyle({ color: 'red' });
+          console.log(`Segment bloqué mis à jour : ${incident.startPoint} -> ${incident.endPoint}`);
+        } else {
+          console.warn(`Segment bloqué introuvable : ${incident.startPoint} -> ${incident.endPoint}`);
+        }
+      }
     });
   }
 
-  loadIncidents(): void {
-    this.incidentService.getActiveIncidents().subscribe((data: Incident[]) => {
-      this.incidents = data;
-      this.drawRoads(); // Redessiner les routes après avoir chargé les incidents
+  private isSegmentBlocked(startPoint: [number, number], endPoint: [number, number]): boolean {
+    console.log('Vérification des segments bloqués :', { startPoint, endPoint, incidents: this.incidents });
+
+    return this.incidents.some(incident => {
+      const start = this.pointsInteret.find(p => p.nom === incident.startPoint);
+      const end = this.pointsInteret.find(p => p.nom === incident.endPoint);
+
+      const match =
+        ((start?.lat === startPoint[0] && start?.lng === startPoint[1] && end?.lat === endPoint[0] && end?.lng === endPoint[1]) ||
+          (start?.lat === endPoint[0] && start?.lng === endPoint[1] && end?.lat === startPoint[0] && end?.lng === startPoint[1])) &&
+        incident.blocked;
+
+      if (match) {
+        console.log(`Segment bloqué détecté : ${incident.startPoint} -> ${incident.endPoint}`);
+      }
+
+      return match;
+    });
+  }
+
+  private updateVeloMarker(idVelo: number, position: { lat: number; lng: number }): void {
+    const marker = this.markersMap[`velo-${idVelo}`];
+    if (marker && marker instanceof L.Marker) {
+      marker.setLatLng([position.lat, position.lng]); // Met à jour la position du marqueur
+      this.map.panTo([position.lat, position.lng], { animate: true }); // Centre la carte sur la position mise à jour
+    } else {
+      console.error(`Marqueur pour le vélo ${idVelo} introuvable.`);
+    }
+  }
+
+  private addVeloMarkers(): void {
+    this.veloService.getVelosWithPosition().subscribe(velos => {
+      this.velos = velos; // Stocker la liste des vélos
+      velos.forEach(velo => {
+        if (velo.position) {
+          const { lat, lng } = velo.position; // Suppression de parsePosition
+          const marker = L.marker([lat, lng], {
+            icon: L.icon({
+              iconUrl: '/content/images/velo.ico', // Assurez-vous que ce chemin est correct
+              iconSize: [32, 32],
+            }),
+          }).addTo(this.map);
+
+          marker.bindPopup(
+            `<b>Vélo ${velo.idVelo}</b><br>Autonomie: ${velo.autonomie} km<br>Capacité: ${velo.capacite} kg<br>État: ${velo.etat}`,
+          );
+          this.markersMap[`velo-${velo.idVelo}`] = marker; // Stocker les marqueurs par ID de vélo
+        }
+      });
     });
   }
 
@@ -444,12 +430,21 @@ export class MapComponent implements OnInit {
       return;
     }
 
+    console.log(`Tentative de résolution de l'incident ${id}`);
+
     this.incidentService.resolveIncident(id).subscribe({
       next: () => {
         alert('Incident résolu.');
-        this.loadIncidents(); // Recharger les incidents
+        this.loadIncidents(); // Recharge les incidents
       },
-      error: (err: any) => console.error("Erreur lors de la résolution de l'incident :", err),
+      error: (err: any) => {
+        console.error("Erreur lors de la résolution de l'incident :", err);
+        if (err.status === 401) {
+          alert('Votre session a expiré. Veuillez vous reconnecter.');
+        } else {
+          alert("Une erreur est survenue lors de la résolution de l'incident.");
+        }
+      },
     });
   }
 }
