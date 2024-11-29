@@ -1,0 +1,13 @@
+<div class="container">
+  <h1>Tournées pour le Vélo {{ idVelo }}</h1>
+  <div *ngFor="let tournee of tournees; let i = index" class="card">
+    <h3>Tournée {{ i + 1 }}</h3>
+    <div *ngFor="let arret of tournee">
+      <p><strong>Arrêt :</strong> {{ arret.nom }}</p>
+      <p><strong>Position :</strong> {{ arret.position }}</p>
+      <p><strong>Statut :</strong> {{ arret.poubelleVidee ? 'Vide' : 'À vider' }}</p>
+      <button (click)="markAsVided(arret)" [disabled]="arret.poubelleVidee">Vider</button>
+    </div>
+    <button (click)="navigateToMapTournee(tournee, i)">Afficher l'itinéraire</button>
+  </div>
+</div>

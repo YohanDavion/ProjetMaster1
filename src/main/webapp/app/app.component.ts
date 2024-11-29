@@ -20,6 +20,7 @@ import { MapComponent } from './map/map.component';
     FormsModule,
     CommonModule,
     MapComponent,
+
     // jhipster-needle-angular-add-module JHipster will add new module here
   ],
 })

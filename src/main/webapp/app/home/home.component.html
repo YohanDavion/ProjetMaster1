@@ -4,7 +4,6 @@
     <!-- Carte pour le nombre total de vélos -->
     <p-card>
       <div class="card-content">
-        <i class="pi pi-bicycle icon"></i>
         <label>Nombre total de vélos : {{ nbVelos }}</label>
         <p-button label="Voir les vélos" (click)="goToPage('velo')" />
       </div>
@@ -13,7 +12,6 @@
     <!-- Carte pour le nombre total d'incidents -->
     <p-card>
       <div class="card-content">
-        <i class="pi pi-exclamation-triangle icon warning"></i>
         <label>Nombre total d'incidents : {{ nbIncidents }}</label>
         <p-button severity="warning" label="Voir les incidents" (click)="goToPage('incidents')" />
       </div>
@@ -21,11 +19,12 @@
 
     <!-- Nouvelle Carte pour un raccourci vers la carte -->
     <p-card>
-      <div class="card-content">
-        <i class="pi pi-map icon success"></i>
-        <label>Carte des Arrêts</label>
-        <p-button severity="success" label="Voir la Carte" (click)="goToPage('map')" />
-      </div>
+      <label>Carte des Arrêts</label>
+      <p-button severity="success" label="Voir la Carte" (click)="goToPage('map')" />
+    </p-card>
+    <p-card>
+      <label>Tournées du jour</label>
+      <p-button severity="info" label="Voir les tournées" (click)="goToPage('tournees')" />
     </p-card>
   </div>
 </div>

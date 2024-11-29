@@ -12,6 +12,9 @@ import { RouteCalculatorComponent } from './route-calculator/route-calculator.co
 import { VeloComponent } from './velo/velo.component';
 import { ListeVeloComponent } from './velos/liste-velo/liste-velo.component';
 import { IncidentListComponent } from './incident/incident-list/incident-list.component';
+import { TourneeComponent } from './tournee/tournee.component';
+import { VeloTourneeComponent } from './velo-tournee/velo-tournee.component';
+import { MapTourneeComponent } from './map-tournee/map-tournee.component';
 
 const routes: Routes = [
   {
@@ -68,6 +71,18 @@ const routes: Routes = [
   {
     path: '',
     loadChildren: () => import(`./entities/entity.routes`),
+  },
+  {
+    path: 'tournees',
+    component: TourneeComponent,
+  },
+  {
+    path: 'velo/:id',
+    component: VeloTourneeComponent,
+  },
+  {
+    path: 'map-tournee',
+    component: MapTourneeComponent,
   },
   ...errorRoute,
 ];
