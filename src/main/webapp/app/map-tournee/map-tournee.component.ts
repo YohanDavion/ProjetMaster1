@@ -136,44 +136,56 @@ export class MapTourneeComponent implements OnInit {
       return;
     }
 
-    // Trajet de la déchetterie vers le premier arrêt, puis chaque arrêt suivant
-    let route = [dechetterie, ...this.tournee];
+    // Trajet de la déchetterie vers les arrêts de la tournée
+    // Je vais reconstruire le tableau en m'assurant que chaque point est bien ajouté
+    const route: PointInteret[] = [];
 
-    // Ajout de la déchetterie à la fin si elle n'est pas déjà là
+    // Ajouter la déchetterie au début
+    route.push(dechetterie);
+
+    // Ajouter les arrêts de la tournée
+    this.tournee.forEach(arret => {
+      const point = this.pointsInteret.find(p => p.nom === arret.nom);
+      if (point && point.lat !== undefined && point.lng !== undefined) {
+        route.push(point);
+      } else {
+        console.warn(`Point d'intérêt invalide : ${arret.nom}`);
+      }
+    });
+
+    // Ajouter la déchetterie à la fin si elle n'est pas déjà présente
     if (route[route.length - 1].nom !== dechetterie.nom) {
       route.push(dechetterie);
     }
 
-    // Validation des points avec coordonnées valides
-    const validRoute = route.filter(point => point && point.lat !== undefined && point.lng !== undefined);
-    if (validRoute.length < 2) {
+    // Vérifier les points valides
+    if (route.length < 2) {
       console.error('Pas assez de points valides pour tracer un trajet.');
       return;
     }
 
-    console.log('Trajet brut :', route);
-    console.log('Trajet valide :', validRoute);
+    // Afficher le trajet en console pour vérification
+    console.log('Route complète :', route);
 
-    // Affichage du trajet en texte sans duplication
-    this.trajetAffiche = validRoute.map(point => point.nom).join(' -> ');
+    // Affichage du trajet sous forme de texte sans duplication
+    this.trajetAffiche = route.map(point => point.nom).join(' -> ');
     console.log('Trajet affiché :', this.trajetAffiche);
 
-    // Tracer chaque segment du trajet, de la déchetterie à chaque arrêt successivement
-    this.drawCalculatedRoute(validRoute);
+    // Tracer chaque segment du trajet
+    this.drawCalculatedRoute(route);
   }
 
-  private drawCalculatedRoute(validRoute: PointInteret[]): void {
-    for (let i = 0; i < validRoute.length - 1; i++) {
-      const start = validRoute[i];
-      const end = validRoute[i + 1];
+  private drawCalculatedRoute(route: PointInteret[]): void {
+    for (let i = 0; i < route.length - 1; i++) {
+      const start = route[i];
+      const end = route[i + 1];
 
       console.log(`Tracé du segment : ${start.nom} -> ${end.nom}`);
 
-      // Vérifier si une route existe entre les arrêts
-      const routeSegment = routes[start.nom]?.includes(end.nom) || routes[end.nom]?.includes(start.nom);
-      if (!routeSegment) {
-        console.warn(`Aucune route directe entre ${start.nom} et ${end.nom}.`);
-        continue;
+      // Vérifier si un segment est bloqué par un incident avant de le tracer
+      if (this.isSegmentBlocked([start.lat, start.lng], [end.lat, end.lng])) {
+        console.warn(`Segment bloqué entre ${start.nom} et ${end.nom}.`);
+        continue; // Ne pas tracer ce segment s'il est bloqué
       }
 
       // Tracer le segment de route entre deux arrêts
@@ -188,6 +200,22 @@ export class MapTourneeComponent implements OnInit {
         },
       ).addTo(this.map);
     }
+  }
+
+  private isSegmentBlocked(startPoint: [number, number], endPoint: [number, number]): boolean {
+    // Vérification des segments bloqués par les incidents
+    return this.incidents.some(incident => {
+      const start = this.pointsInteret.find(p => p.nom === incident.startPoint);
+      const end = this.pointsInteret.find(p => p.nom === incident.endPoint);
+
+      return (
+        start &&
+        end &&
+        ((start.lat === startPoint[0] && start.lng === startPoint[1] && end.lat === endPoint[0] && end.lng === endPoint[1]) ||
+          (start.lat === endPoint[0] && start.lng === endPoint[1] && end.lat === startPoint[0] && end.lng === startPoint[1])) &&
+        incident.blocked
+      );
+    });
   }
 
   private loadIncidents(): void {

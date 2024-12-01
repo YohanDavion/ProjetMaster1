@@ -41,8 +41,7 @@
               "src/main/webapp/content/scss/vendor.scss",
               "src/main/webapp/content/scss/global.scss",
               "node_modules/primeicons/primeicons.css",
-              "node_modules/leaflet/dist/leaflet.css",
-              "src/styles.css"
+              "node_modules/leaflet/dist/leaflet.css"
             ],
             "scripts": []
           },

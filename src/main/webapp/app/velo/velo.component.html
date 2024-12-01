@@ -21,7 +21,7 @@
     <tr>
       <th>ID Vélo</th>
       <th>Autonomie (km)</th>
-      <th>Capacité (%)</th>
+      <th>Capacité (kg)</th>
       <th>État</th>
       <th>Actions</th>
     </tr>
@@ -37,9 +37,9 @@
       </td>
       <td>
         <div class="jauge-container">
-          <div class="jauge" [ngStyle]="{ width: velo.capacite + '%' }"></div>
+          <div class="jauge" [ngStyle]="{ width: (velo.capacite / 50) * 100 + '%' }"></div>
         </div>
-        <span class="jauge-text">{{ velo.capacite }}%</span>
+        <span class="jauge-text">{{ velo.capacite }}kg</span>
       </td>
       <td>{{ velo.etat }}</td>
       <td>
