@@ -15,7 +15,6 @@ import jakarta.validation.constraints.Pattern;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
-import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -205,5 +204,15 @@ public class UserResource {
         log.debug("REST request to delete User: {}", login);
         userService.deleteUser(login);
         return ResponseEntity.noContent().headers(HeaderUtil.createAlert(applicationName, "userManagement.deleted", login)).build();
+    }
+
+    @PutMapping("/users/{login}/assign-velo")
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    public ResponseEntity<User> assignVeloToUser(@PathVariable String login, @RequestParam Long veloId) {
+        // Appel à la méthode du service
+        User user = userService.assignVeloToUserByLogin(login, veloId);
+
+        // Retourner la réponse avec l'utilisateur mis à jour
+        return ResponseEntity.ok(user);
     }
 }

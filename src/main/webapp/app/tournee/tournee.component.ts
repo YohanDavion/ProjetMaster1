@@ -5,6 +5,9 @@ import { ArretService, PointInteret } from 'app/arret.service';
 import { Velo } from 'app/velo/velo.model';
 import { CommonModule } from '@angular/common';
 import { TourneeService } from 'app/tournee/tournee.service';
+import { routes } from '../points-interet';
+import { IncidentService } from '../incident/incident.service';
+import { Incident } from '../incident/incident.model';
 
 @Component({
   standalone: true,
@@ -16,11 +19,13 @@ import { TourneeService } from 'app/tournee/tournee.service';
 export class TourneeComponent implements OnInit {
   velos: Velo[] = [];
   arrets: PointInteret[] = [];
+  incidents: Incident[] = [];
   tourneesLoaded: boolean = false;
 
   constructor(
     private veloService: VeloService,
     private arretService: ArretService,
+    private incidentService: IncidentService,
     private router: Router,
     public tourneeService: TourneeService, // Pour utiliser dans le template
   ) {}
@@ -35,41 +40,94 @@ export class TourneeComponent implements OnInit {
       return;
     }
 
-    this.veloService.getVelosWithPosition().subscribe(velos => {
-      this.velos = velos;
+    this.incidentService.getActiveIncidents().subscribe(incidents => {
+      this.incidents = incidents;
 
-      this.arretService.getArrets().subscribe(arrets => {
-        this.arrets = arrets.filter(arret => !arret.poubelleVidee);
-        const tournees = this.distributeArrets(this.velos, this.arrets);
-        this.checkForDuplicateArrets(Object.values(tournees).flat());
-        this.tourneeService.setTournees(tournees);
-        this.tourneesLoaded = true;
+      this.veloService.getVelosWithPosition().subscribe(velos => {
+        this.velos = velos;
+
+        this.arretService.getArrets().subscribe(arrets => {
+          this.arrets = arrets.filter(arret => !arret.poubelleVidee);
+          const tournees = this.distributeArretsOptimized(this.velos, this.arrets);
+          this.checkForDuplicateArrets(Object.values(tournees).flat());
+          this.tourneeService.setTournees(tournees);
+          this.tourneesLoaded = true;
+        });
       });
     });
   }
 
-  distributeArrets(velos: Velo[], arrets: PointInteret[]): { [key: number]: PointInteret[][] } {
+  distributeArretsOptimized(velos: Velo[], arrets: PointInteret[]): { [key: number]: PointInteret[][] } {
     const repartition: { [key: number]: PointInteret[][] } = {};
+    const assignedArrets = new Set<PointInteret>();
 
+    // Initialiser les tournées pour chaque vélo
     velos.forEach(velo => {
       if (velo.idVelo !== undefined) {
         repartition[velo.idVelo] = [];
       }
     });
 
+    // Distribuer les arrêts en utilisant les routes disponibles pour optimiser le trajet
     let currentVeloIndex = 0;
     const totalVelos = velos.length;
 
-    while (arrets.length > 0) {
+    while (assignedArrets.size < arrets.length) {
       const currentVelo = velos[currentVeloIndex];
       if (currentVelo && currentVelo.idVelo !== undefined) {
-        const arretBatch = arrets.splice(0, 4);
-        repartition[currentVelo.idVelo].push(arretBatch);
-        currentVeloIndex = (currentVeloIndex + 1) % totalVelos;
+        let currentTournee: PointInteret[] = [];
+
+        while (currentTournee.length < 4 && assignedArrets.size < arrets.length) {
+          let nextArret: PointInteret | undefined;
+
+          if (currentTournee.length === 0) {
+            // Sélectionner un arrêt non assigné au hasard pour commencer
+            nextArret = arrets.find(arret => !assignedArrets.has(arret));
+          } else {
+            // Trouver le prochain arrêt connecté par une route et non bloqué par un incident
+            const lastArret = currentTournee[currentTournee.length - 1];
+            nextArret = this.findNextConnectedArret(lastArret, arrets, assignedArrets);
+          }
+
+          if (nextArret) {
+            currentTournee.push(nextArret);
+            assignedArrets.add(nextArret);
+          } else {
+            break; // Si aucun arrêt connecté n'est trouvé, arrêter la tournée
+          }
+        }
+
+        if (currentTournee.length > 0) {
+          repartition[currentVelo.idVelo].push(currentTournee);
+        }
       }
+      currentVeloIndex = (currentVeloIndex + 1) % totalVelos;
     }
 
     return repartition;
+  }
+
+  findNextConnectedArret(currentArret: PointInteret, arrets: PointInteret[], assignedArrets: Set<PointInteret>): PointInteret | undefined {
+    for (const route of Object.values(routes)) {
+      if (route.includes(currentArret.nom)) {
+        for (const arretNom of route) {
+          const nextArret = arrets.find(arret => arret.nom === arretNom && !assignedArrets.has(arret));
+          if (nextArret && !this.isSegmentBlocked(currentArret, nextArret)) {
+            return nextArret;
+          }
+        }
+      }
+    }
+    return undefined;
+  }
+
+  isSegmentBlocked(startArret: PointInteret, endArret: PointInteret): boolean {
+    return this.incidents.some(incident => {
+      return (
+        (incident.startPoint === startArret.nom && incident.endPoint === endArret.nom) ||
+        (incident.startPoint === endArret.nom && incident.endPoint === startArret.nom)
+      );
+    });
   }
 
   goToVeloPage(idVelo: number): void {

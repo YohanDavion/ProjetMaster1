@@ -3,8 +3,10 @@ package com.limayrac.velopoubelle.service;
 import com.limayrac.velopoubelle.config.Constants;
 import com.limayrac.velopoubelle.domain.Authority;
 import com.limayrac.velopoubelle.domain.User;
+import com.limayrac.velopoubelle.domain.Velo;
 import com.limayrac.velopoubelle.repository.AuthorityRepository;
 import com.limayrac.velopoubelle.repository.UserRepository;
+import com.limayrac.velopoubelle.repository.VeloRepository;
 import com.limayrac.velopoubelle.security.AuthoritiesConstants;
 import com.limayrac.velopoubelle.security.SecurityUtils;
 import com.limayrac.velopoubelle.service.dto.AdminUserDTO;
@@ -15,6 +17,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -320,5 +323,29 @@ public class UserService {
         if (user.getEmail() != null) {
             Objects.requireNonNull(cacheManager.getCache(UserRepository.USERS_BY_EMAIL_CACHE)).evict(user.getEmail());
         }
+    }
+
+    @Autowired
+    private VeloRepository veloRepository;
+
+    public User assignVeloToUser(Long userId, Long veloId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        Velo velo = veloRepository.findById(veloId).orElseThrow();
+        user.setVelo(velo); // Associer le vélo à l'utilisateur
+        return userRepository.save(user);
+    }
+
+    public User assignVeloToUserByLogin(String login, Long veloId) {
+        // Récupérer l'utilisateur par son login
+        User user = userRepository.findOneByLogin(login).orElseThrow();
+
+        // Récupérer le vélo par son ID
+        Velo velo = veloRepository.findById(veloId).orElseThrow();
+
+        // Assigner le vélo à l'utilisateur
+        user.setVelo(velo);
+
+        // Sauvegarder l'utilisateur avec le vélo attribué
+        return userRepository.save(user);
     }
 }

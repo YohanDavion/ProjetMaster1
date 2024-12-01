@@ -78,6 +78,10 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
     @Column(name = "reset_date")
     private Instant resetDate = null;
 
+    @ManyToOne
+    @JoinColumn(name = "velo_id")
+    private Velo velo;
+
     @JsonIgnore
     @ManyToMany
     @JoinTable(
@@ -223,5 +227,13 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
             ", langKey='" + langKey + '\'' +
             ", activationKey='" + activationKey + '\'' +
             "}";
+    }
+
+    public Velo getVelo() {
+        return velo;
+    }
+
+    public void setVelo(Velo velo) {
+        this.velo = velo;
     }
 }

@@ -21,6 +21,7 @@ export class MapTourneeComponent implements OnInit {
   public pointsInteret: PointInteret[] = [];
   public incidents: Incident[] = [];
   public trajetAffiche: string = '';
+  public distanceTotale: number = 0;
 
   constructor(
     private route: ActivatedRoute,
@@ -83,7 +84,6 @@ export class MapTourneeComponent implements OnInit {
 
       this.addMarkers();
       this.drawAllRoutes();
-      this.highlightTourneeRoute();
       this.loadIncidents(); // Charger et appliquer les incidents
     });
   }
@@ -137,7 +137,6 @@ export class MapTourneeComponent implements OnInit {
     }
 
     // Trajet de la déchetterie vers les arrêts de la tournée
-    // Je vais reconstruire le tableau en m'assurant que chaque point est bien ajouté
     const route: PointInteret[] = [];
 
     // Ajouter la déchetterie au début
@@ -171,6 +170,18 @@ export class MapTourneeComponent implements OnInit {
     this.trajetAffiche = route.map(point => point.nom).join(' -> ');
     console.log('Trajet affiché :', this.trajetAffiche);
 
+    // Calculer la distance totale en prenant chaque segment de 500m
+    this.distanceTotale = 0;
+    for (let i = 0; i < route.length - 1; i++) {
+      const start = route[i];
+      const end = route[i + 1];
+
+      // Utiliser calculateRoute pour obtenir tous les points entre start et end
+      const calculatedPath = this.calculateRoute(start, end);
+      this.distanceTotale += (calculatedPath.length - 1) * 0.5; // Chaque segment entre deux points d'intérêt est de 500m
+    }
+    console.log('Distance totale :', this.distanceTotale.toFixed(2), 'km');
+
     // Tracer chaque segment du trajet
     this.drawCalculatedRoute(route);
   }
@@ -180,42 +191,95 @@ export class MapTourneeComponent implements OnInit {
       const start = route[i];
       const end = route[i + 1];
 
-      console.log(`Tracé du segment : ${start.nom} -> ${end.nom}`);
+      console.log(`Calcul du segment : ${start.nom} -> ${end.nom}`);
 
-      // Vérifier si un segment est bloqué par un incident avant de le tracer
-      if (this.isSegmentBlocked([start.lat, start.lng], [end.lat, end.lng])) {
-        console.warn(`Segment bloqué entre ${start.nom} et ${end.nom}.`);
-        continue; // Ne pas tracer ce segment s'il est bloqué
+      // Utiliser calculateRoute pour trouver le chemin entre start et end
+      const calculatedPath = this.calculateRoute(start, end);
+
+      if (calculatedPath.length < 2) {
+        console.warn(`Aucun chemin trouvé entre ${start.nom} et ${end.nom}, le segment ne sera pas tracé.`);
+        continue; // Sauter ce segment si aucun chemin n'est trouvé
       }
 
-      // Tracer le segment de route entre deux arrêts
-      L.polyline(
-        [
-          [start.lat, start.lng],
-          [end.lat, end.lng],
-        ],
-        {
-          color: 'blue',
-          weight: 4,
-        },
-      ).addTo(this.map);
+      // Tracer chaque segment du chemin calculé
+      for (let j = 0; j < calculatedPath.length - 1; j++) {
+        const segmentStart = calculatedPath[j];
+        const segmentEnd = calculatedPath[j + 1];
+
+        console.log(`Tracé du sous-segment : (${segmentStart.lat}, ${segmentStart.lng}) -> (${segmentEnd.lat}, ${segmentEnd.lng})`);
+
+        L.polyline(
+          [
+            [segmentStart.lat, segmentStart.lng],
+            [segmentEnd.lat, segmentEnd.lng],
+          ],
+          {
+            color: 'blue',
+            weight: 4,
+          },
+        ).addTo(this.map);
+      }
     }
   }
 
-  private isSegmentBlocked(startPoint: [number, number], endPoint: [number, number]): boolean {
-    // Vérification des segments bloqués par les incidents
-    return this.incidents.some(incident => {
-      const start = this.pointsInteret.find(p => p.nom === incident.startPoint);
-      const end = this.pointsInteret.find(p => p.nom === incident.endPoint);
+  private calculateRoute(start: PointInteret, end: PointInteret): { lat: number; lng: number }[] {
+    const blockedSegments = this.incidents
+      .filter(incident => incident.blocked)
+      .map(incident => `${incident.startPoint}->${incident.endPoint}`);
 
-      return (
-        start &&
-        end &&
-        ((start.lat === startPoint[0] && start.lng === startPoint[1] && end.lat === endPoint[0] && end.lng === endPoint[1]) ||
-          (start.lat === endPoint[0] && start.lng === endPoint[1] && end.lat === startPoint[0] && end.lng === startPoint[1])) &&
-        incident.blocked
-      );
-    });
+    const queue: string[][] = [[start.nom]];
+    const visited: Set<string> = new Set();
+
+    while (queue.length > 0) {
+      const path = queue.shift()!;
+      const lastNode = path[path.length - 1];
+
+      if (lastNode === end.nom) {
+        return this.getLatLngPath(path);
+      }
+
+      if (!visited.has(lastNode)) {
+        visited.add(lastNode);
+
+        const neighbors = this.getAllNeighbors(lastNode).filter(neighbor => {
+          return !blockedSegments.includes(`${lastNode}->${neighbor}`);
+        });
+
+        for (const neighbor of neighbors) {
+          if (!visited.has(neighbor)) {
+            queue.push([...path, neighbor]);
+          }
+        }
+      }
+    }
+
+    console.error('Aucun chemin trouvé.');
+    return [];
+  }
+
+  private getLatLngPath(path: string[]): { lat: number; lng: number }[] {
+    return path
+      .map(name => {
+        const point = this.pointsInteret.find(p => p.nom === name);
+        return point ? { lat: point.lat, lng: point.lng } : null;
+      })
+      .filter((p): p is { lat: number; lng: number } => p !== null);
+  }
+
+  private getAllNeighbors(pointName: string): string[] {
+    let neighbors: string[] = [];
+    for (const route in routes) {
+      if (routes[route].includes(pointName)) {
+        const index = routes[route].indexOf(pointName);
+        if (index > 0) {
+          neighbors.push(routes[route][index - 1]);
+        }
+        if (index < routes[route].length - 1) {
+          neighbors.push(routes[route][index + 1]);
+        }
+      }
+    }
+    return neighbors;
   }
 
   private loadIncidents(): void {
@@ -223,6 +287,7 @@ export class MapTourneeComponent implements OnInit {
       this.incidents = data;
       console.log('Incidents actifs :', this.incidents);
       this.updateBlockedSegments();
+      this.highlightTourneeRoute(); // Mettre à jour la route après le chargement des incidents
     });
   }
 
