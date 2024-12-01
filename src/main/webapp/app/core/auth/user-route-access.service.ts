@@ -9,15 +9,29 @@ export const UserRouteAccessService: CanActivateFn = (next: ActivatedRouteSnapsh
   const accountService = inject(AccountService);
   const router = inject(Router);
   const stateStorageService = inject(StateStorageService);
+
   return accountService.identity().pipe(
     map(account => {
       if (account) {
         const authorities = next.data['authorities'];
 
+        // Ajouter 'ROLE_RH' chaque fois que 'ROLE_ADMIN' est requis
+        if (authorities && authorities.includes('ROLE_ADMIN')) {
+          authorities.push('ROLE_RH');
+        }
+
+        // Vérifier si l'utilisateur a ROLE_VELO et le rediriger vers /velo-home
+        if (account.authorities.includes('ROLE_VELO') && state.url === '/') {
+          router.navigate(['/velo-home']);
+          return false; // Empêcher la navigation vers la page actuelle
+        }
+
+        // Vérifier les autres autorités
         if (!authorities || authorities.length === 0 || accountService.hasAnyAuthority(authorities)) {
           return true;
         }
 
+        // Si l'utilisateur n'a pas les autorisations requises
         if (isDevMode()) {
           console.error('User does not have any of the required authorities:', authorities);
         }
@@ -25,6 +39,7 @@ export const UserRouteAccessService: CanActivateFn = (next: ActivatedRouteSnapsh
         return false;
       }
 
+      // Si l'utilisateur n'est pas authentifié, le rediriger vers la page de connexion
       stateStorageService.storeUrl(state.url);
       router.navigate(['/login']);
       return false;

@@ -19,8 +19,23 @@
     </a>
     <div class="navbar-collapse collapse" id="navbarResponsive" [ngbCollapse]="isNavbarCollapsed()">
       <ul class="navbar-nav ms-auto">
-        <!-- Home Link -->
-        <li class="nav-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <!-- Home Link (Accessible by ROLE_VELO for specific home, others for default home) -->
+        <li *jhiHasAnyAuthority="'ROLE_VELO'" class="nav-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <a class="nav-link" routerLink="/velo-home" (click)="collapseNavbar()">
+            <span>
+              <fa-icon icon="home"></fa-icon>
+              <span jhiTranslate="global.menu.home">Home Vélo</span>
+            </span>
+          </a>
+        </li>
+
+        <!-- Default Home Link (Accessible by all roles except ROLE_VELO) -->
+        <li
+          *jhiHasAnyAuthority="['ROLE_ADMIN', 'ROLE_RH', 'ROLE_GESTIONNAIRE']"
+          class="nav-item"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
           <a class="nav-link" routerLink="/" (click)="collapseNavbar()">
             <span>
               <fa-icon icon="home"></fa-icon>
@@ -29,18 +44,18 @@
           </a>
         </li>
 
-        <!-- Map Link -->
-        <li class="nav-item" routerLinkActive="active">
+        <!-- Velo Link (Accessible by ROLE_GESTIONNAIRE and ROLE_ADMIN) -->
+        <li *jhiHasAnyAuthority="['ROLE_GESTIONNAIRE', 'ROLE_ADMIN']" class="nav-item" routerLinkActive="active">
           <a class="nav-link" routerLink="/velo" (click)="collapseNavbar()">
             <span>
-              <fa-icon icon="velo"></fa-icon>
+              <fa-icon icon="bicycle"></fa-icon>
               <span>Velo</span>
             </span>
           </a>
         </li>
 
-        <!-- Map Link -->
-        <li class="nav-item" routerLinkActive="active">
+        <!-- Map Link (Accessible by ROLE_GESTIONNAIRE and ROLE_ADMIN) -->
+        <li *jhiHasAnyAuthority="['ROLE_GESTIONNAIRE', 'ROLE_ADMIN']" class="nav-item" routerLinkActive="active">
           <a class="nav-link" routerLink="/map" (click)="collapseNavbar()">
             <span>
               <fa-icon icon="map"></fa-icon>
@@ -49,8 +64,8 @@
           </a>
         </li>
 
-        <!-- Calculer Trajet Link -->
-        <li class="nav-item" routerLinkActive="active">
+        <!-- Calculer Trajet Link (Accessible by ROLE_GESTIONNAIRE and ROLE_ADMIN) -->
+        <li *jhiHasAnyAuthority="['ROLE_GESTIONNAIRE', 'ROLE_ADMIN']" class="nav-item" routerLinkActive="active">
           <a class="nav-link" routerLink="/calculer-trajet" (click)="collapseNavbar()">
             <span>
               <fa-icon icon="route"></fa-icon>
@@ -59,18 +74,19 @@
           </a>
         </li>
 
-        <!-- Calculer Trajet Link -->
-        <li class="nav-item" routerLinkActive="active">
+        <!-- Incidents Link (Accessible by ROLE_GESTIONNAIRE and ROLE_ADMIN) -->
+        <li *jhiHasAnyAuthority="['ROLE_GESTIONNAIRE', 'ROLE_ADMIN']" class="nav-item" routerLinkActive="active">
           <a class="nav-link" routerLink="/incidents" (click)="collapseNavbar()">
             <span>
-              <fa-icon icon="route"></fa-icon>
+              <fa-icon icon="exclamation-triangle"></fa-icon>
               <span>Incidents</span>
             </span>
           </a>
         </li>
 
+        <!-- Admin Menu (Accessible by ROLE_ADMIN and ROLE_RH for User Management) -->
         <li
-          *jhiHasAnyAuthority="'ROLE_ADMIN'"
+          *jhiHasAnyAuthority="['ROLE_ADMIN', 'ROLE_RH']"
           ngbDropdown
           class="nav-item dropdown pointer"
           display="dynamic"
@@ -96,55 +112,40 @@
                 <span jhiTranslate="global.menu.entities.adminAuthority">Authority</span>
               </a>
             </li>
-            <!-- jhipster-needle-add-element-to-admin-menu - JHipster will add entities to the admin menu here -->
-            <li>
+            <!-- User Management Link (Accessible by ROLE_ADMIN and ROLE_RH) -->
+            <li *jhiHasAnyAuthority="['ROLE_ADMIN', 'ROLE_RH']">
               <a class="dropdown-item" routerLink="/admin/user-management" routerLinkActive="active" (click)="collapseNavbar()">
                 <fa-icon icon="users" [fixedWidth]="true"></fa-icon>
                 <span jhiTranslate="global.menu.admin.userManagement">User management</span>
               </a>
             </li>
-            <li>
+            <li *jhiHasAnyAuthority="'ROLE_ADMIN'">
               <a class="dropdown-item" routerLink="/admin/metrics" routerLinkActive="active" (click)="collapseNavbar()">
                 <fa-icon icon="tachometer-alt" [fixedWidth]="true"></fa-icon>
                 <span jhiTranslate="global.menu.admin.metrics">Metrics</span>
               </a>
             </li>
-            <li>
+            <li *jhiHasAnyAuthority="'ROLE_ADMIN'">
               <a class="dropdown-item" routerLink="/admin/health" routerLinkActive="active" (click)="collapseNavbar()">
                 <fa-icon icon="heart" [fixedWidth]="true"></fa-icon>
                 <span jhiTranslate="global.menu.admin.health">Health</span>
               </a>
             </li>
-            <li>
+            <li *jhiHasAnyAuthority="'ROLE_ADMIN'">
               <a class="dropdown-item" routerLink="/admin/configuration" routerLinkActive="active" (click)="collapseNavbar()">
                 <fa-icon icon="cogs" [fixedWidth]="true"></fa-icon>
                 <span jhiTranslate="global.menu.admin.configuration">Configuration</span>
               </a>
             </li>
-            <li>
+            <li *jhiHasAnyAuthority="'ROLE_ADMIN'">
               <a class="dropdown-item" routerLink="/admin/logs" routerLinkActive="active" (click)="collapseNavbar()">
                 <fa-icon icon="tasks" [fixedWidth]="true"></fa-icon>
                 <span jhiTranslate="global.menu.admin.logs">Logs</span>
               </a>
             </li>
-            @if (openAPIEnabled) {
-              <li>
-                <a class="dropdown-item" routerLink="/admin/docs" routerLinkActive="active" (click)="collapseNavbar()">
-                  <fa-icon icon="book" [fixedWidth]="true"></fa-icon>
-                  <span jhiTranslate="global.menu.admin.apidocs">API</span>
-                </a>
-              </li>
-            }
-            @if (!inProduction) {
-              <li>
-                <a class="dropdown-item" href="./h2-console/" target="_tab" (click)="collapseNavbar()">
-                  <fa-icon icon="database" [fixedWidth]="true"></fa-icon>
-                  <span jhiTranslate="global.menu.admin.database">Database</span>
-                </a>
-              </li>
-            }
           </ul>
         </li>
+
         @if (languages && languages.length > 1) {
           <li ngbDropdown class="nav-item dropdown pointer" display="dynamic">
             <a class="nav-link dropdown-toggle" ngbDropdownToggle href="javascript:void(0);" id="languagesnavBarDropdown">
@@ -168,6 +169,8 @@
             </ul>
           </li>
         }
+
+        <!-- Account Menu -->
         <li
           ngbDropdown
           class="nav-item dropdown pointer"

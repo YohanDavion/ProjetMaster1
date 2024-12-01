@@ -14,12 +14,24 @@ import { IncidentListComponent } from './incident/incident-list/incident-list.co
 import { TourneeComponent } from './tournee/tournee.component';
 import { VeloTourneeComponent } from './velo-tournee/velo-tournee.component';
 import { MapTourneeComponent } from './map-tournee/map-tournee.component';
+import { VeloHomeComponent } from './velo-home/velo-home.component';
 
 const routes: Routes = [
   {
     path: '',
     component: HomeComponent,
-    title: 'home.title',
+    data: {
+      authorities: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_GESTIONNAIRE'],
+    },
+    canActivate: [UserRouteAccessService],
+  },
+  {
+    path: 'velo-home',
+    component: VeloHomeComponent,
+    data: {
+      authorities: ['ROLE_VELO'],
+    },
+    canActivate: [UserRouteAccessService],
   },
   {
     path: '',

@@ -117,6 +117,7 @@ class AccountResourceIT {
             .andExpect(jsonPath("$.email").value("john.doe@jhipster.com"))
             .andExpect(jsonPath("$.imageUrl").value("http://placehold.it/50x50"))
             .andExpect(jsonPath("$.langKey").value("en"))
+            .andExpect(jsonPath("$.veloId").value(1L)) // Vérifiez que le veloId est bien présent dans la réponse
             .andExpect(jsonPath("$.authorities").value(AuthoritiesConstants.ADMIN));
 
         userService.deleteUser(TEST_USER_LOGIN);
