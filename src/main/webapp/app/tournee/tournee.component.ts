@@ -8,6 +8,7 @@ import { TourneeService } from 'app/tournee/tournee.service';
 import { routes } from '../points-interet';
 import { IncidentService } from '../incident/incident.service';
 import { Incident } from '../incident/incident.model';
+import { AccountService } from 'app/core/auth/account.service';
 
 @Component({
   standalone: true,
@@ -21,17 +22,30 @@ export class TourneeComponent implements OnInit {
   arrets: PointInteret[] = [];
   incidents: Incident[] = [];
   tourneesLoaded: boolean = false;
+  idVelo: number | null = null;
 
   constructor(
     private veloService: VeloService,
     private arretService: ArretService,
     private incidentService: IncidentService,
     private router: Router,
-    public tourneeService: TourneeService, // Pour utiliser dans le template
+    public tourneeService: TourneeService,
+    private accountService: AccountService,
   ) {}
 
   ngOnInit(): void {
-    this.loadData();
+    // Récupérer l'ID du vélo à partir du service d'authentification
+    this.accountService.identity().subscribe(account => {
+      if (account && account.veloId) {
+        this.idVelo = account.veloId;
+        console.log('ID du Vélo récupéré :', this.idVelo); // Ajoutez ce log pour vérifier la valeur
+        this.loadData();
+      } else {
+        console.log('Aucun ID de vélo associé à cet utilisateur.');
+        // Chargez les données générales si aucun ID de vélo n'est associé
+        this.loadData();
+      }
+    });
   }
 
   loadData(): void {
@@ -44,12 +58,15 @@ export class TourneeComponent implements OnInit {
       this.incidents = incidents;
 
       this.veloService.getVelosWithPosition().subscribe(velos => {
+        // Charger tous les vélos
         this.velos = velos;
 
         this.arretService.getArrets().subscribe(arrets => {
           this.arrets = arrets.filter(arret => !arret.poubelleVidee);
+          // Distribuer les arrêts à tous les vélos
           const tournees = this.distributeArretsOptimized(this.velos, this.arrets);
           this.checkForDuplicateArrets(Object.values(tournees).flat());
+          // Enregistrer toutes les tournées dans TourneeService
           this.tourneeService.setTournees(tournees);
           this.tourneesLoaded = true;
         });

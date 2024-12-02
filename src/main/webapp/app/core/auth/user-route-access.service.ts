@@ -20,10 +20,10 @@ export const UserRouteAccessService: CanActivateFn = (next: ActivatedRouteSnapsh
           authorities.push('ROLE_RH');
         }
 
-        // Vérifier si l'utilisateur a ROLE_VELO et le rediriger vers /velo-home
+        // Si l'utilisateur est un vélo, rediriger vers /tournees
         if (account.authorities.includes('ROLE_VELO') && state.url === '/') {
-          router.navigate(['/velo-home']);
-          return false; // Empêcher la navigation vers la page actuelle
+          router.navigate(['/tournees']);
+          return false;
         }
 
         // Vérifier les autres autorités

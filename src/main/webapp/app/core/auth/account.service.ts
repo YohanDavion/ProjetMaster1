@@ -30,6 +30,11 @@ export class AccountService {
     this.authenticationState.next(this.userIdentity());
     if (!identity) {
       this.accountCache$ = null;
+    } else {
+      if (identity.authorities.includes('ROLE_VELO')) {
+        // Redirection vers /tournees après la connexion si l'utilisateur est un vélo
+        this.router.navigate(['/tournees']);
+      }
     }
   }
 
@@ -78,7 +83,11 @@ export class AccountService {
   }
 
   private fetch(): Observable<Account> {
-    return this.http.get<Account>(this.applicationConfigService.getEndpointFor('api/account'));
+    return this.http.get<Account>(this.applicationConfigService.getEndpointFor('api/account')).pipe(
+      tap(account => {
+        console.log('Compte utilisateur récupéré :', account);
+      }),
+    );
   }
 
   private navigateToStoredUrl(): void {

@@ -1,12 +1,14 @@
 <div class="container">
   <h1>Tournées</h1>
-  <div *ngIf="velos.length > 0; else noVelos" class="cards">
-    <div *ngFor="let velo of velos" class="card">
-      <h3>Vélo {{ velo.idVelo }}</h3>
-      <p>Autonomie restante : {{ velo.autonomie }} km</p>
-      <p>Capacité restante : {{ velo.capacite }} kg</p>
-      <button *ngIf="velo.idVelo !== undefined" (click)="goToVeloPage(velo.idVelo)">Voir les tournées</button>
-    </div>
+  <div *ngIf="idVelo !== null && velos.length > 0; else noVelos" class="cards">
+    <ng-container *ngFor="let velo of velos">
+      <div *ngIf="velo.idVelo === idVelo" class="card">
+        <h3>Vélo {{ velo.idVelo }}</h3>
+        <p>Autonomie restante : {{ velo.autonomie }} km</p>
+        <p>Capacité restante : {{ velo.capacite }} kg</p>
+        <button (click)="goToVeloPage(velo.idVelo!)">Voir les tournées</button>
+      </div>
+    </ng-container>
   </div>
 
   <ng-template #noVelos>

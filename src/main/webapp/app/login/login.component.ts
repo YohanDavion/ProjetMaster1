@@ -44,10 +44,14 @@ export default class LoginComponent implements OnInit, AfterViewInit {
     this.loginService.login(this.loginForm.getRawValue()).subscribe({
       next: () => {
         this.authenticationError.set(false);
-        if (!this.router.getCurrentNavigation()) {
-          // There were no routing during login (eg from navigationToStoredUrl)
-          this.router.navigate(['']);
-        }
+        this.accountService.identity().subscribe(account => {
+          if (account && account.authorities.includes('ROLE_VELO')) {
+            this.router.navigate(['/tournees']);
+          } else {
+            // Rediriger vers la page d'accueil si l'utilisateur n'est pas un vélo
+            this.router.navigate(['/']);
+          }
+        });
       },
       error: () => this.authenticationError.set(true),
     });
