@@ -23,6 +23,8 @@ export class TourneeComponent implements OnInit {
   incidents: Incident[] = [];
   tourneesLoaded: boolean = false;
   idVelo: number | null = null;
+  saison: 'ETE' | 'HIVER' = (localStorage.getItem('saison') as 'ETE' | 'HIVER') || this.getSaison();
+  estimationTempsParVelo: { [key: number]: number[] } = {};
 
   constructor(
     private veloService: VeloService,
@@ -34,39 +36,36 @@ export class TourneeComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Récupérer l'ID du vélo à partir du service d'authentification
     this.accountService.identity().subscribe(account => {
       if (account && account.veloId) {
         this.idVelo = account.veloId;
-        console.log('ID du Vélo récupéré :', this.idVelo); // Ajoutez ce log pour vérifier la valeur
         this.loadData();
       } else {
-        console.log('Aucun ID de vélo associé à cet utilisateur.');
-        // Chargez les données générales si aucun ID de vélo n'est associé
         this.loadData();
       }
     });
   }
 
+  toggleSaison(): void {
+    this.saison = this.saison === 'ETE' ? 'HIVER' : 'ETE';
+    localStorage.setItem('saison', this.saison);
+    this.tourneesLoaded = false;
+    this.loadData();
+  }
+
   loadData(): void {
-    if (this.tourneesLoaded) {
-      console.warn('Les tournées ont déjà été chargées.');
-      return;
-    }
+    if (this.tourneesLoaded) return;
 
     this.incidentService.getActiveIncidents().subscribe(incidents => {
       this.incidents = incidents;
 
       this.veloService.getVelosWithPosition().subscribe(velos => {
-        // Charger tous les vélos
         this.velos = velos;
 
         this.arretService.getArrets().subscribe(arrets => {
           this.arrets = arrets.filter(arret => !arret.poubelleVidee);
-          // Distribuer les arrêts à tous les vélos
           const tournees = this.distributeArretsOptimized(this.velos, this.arrets);
           this.checkForDuplicateArrets(Object.values(tournees).flat());
-          // Enregistrer toutes les tournées dans TourneeService
           this.tourneeService.setTournees(tournees);
           this.tourneesLoaded = true;
         });
@@ -77,15 +76,21 @@ export class TourneeComponent implements OnInit {
   distributeArretsOptimized(velos: Velo[], arrets: PointInteret[]): { [key: number]: PointInteret[][] } {
     const repartition: { [key: number]: PointInteret[][] } = {};
     const assignedArrets = new Set<PointInteret>();
+    const autonomieMaxKm = this.getAutonomieParSaison();
+    const distanceParArret = 0.5;
+    const vitesseKmH = 5;
+    const tempsParKm = 60 / vitesseKmH;
+    const tempsRamassageParArret = 1;
 
-    // Initialiser les tournées pour chaque vélo
+    let distanceParcourue = 0;
+
     velos.forEach(velo => {
       if (velo.idVelo !== undefined) {
         repartition[velo.idVelo] = [];
+        this.estimationTempsParVelo[velo.idVelo] = [];
       }
     });
 
-    // Distribuer les arrêts en utilisant les routes disponibles pour optimiser le trajet
     let currentVeloIndex = 0;
     const totalVelos = velos.length;
 
@@ -98,10 +103,8 @@ export class TourneeComponent implements OnInit {
           let nextArret: PointInteret | undefined;
 
           if (currentTournee.length === 0) {
-            // Sélectionner un arrêt non assigné au hasard pour commencer
             nextArret = arrets.find(arret => !assignedArrets.has(arret));
           } else {
-            // Trouver le prochain arrêt connecté par une route et non bloqué par un incident
             const lastArret = currentTournee[currentTournee.length - 1];
             nextArret = this.findNextConnectedArret(lastArret, arrets, assignedArrets);
           }
@@ -109,15 +112,29 @@ export class TourneeComponent implements OnInit {
           if (nextArret) {
             currentTournee.push(nextArret);
             assignedArrets.add(nextArret);
+            distanceParcourue += distanceParArret;
+
+            if (distanceParcourue >= autonomieMaxKm) {
+              break;
+            }
           } else {
-            break; // Si aucun arrêt connecté n'est trouvé, arrêter la tournée
+            break;
           }
         }
 
         if (currentTournee.length > 0) {
           repartition[currentVelo.idVelo].push(currentTournee);
+
+          const distanceTotaleKm = currentTournee.length * distanceParArret;
+          const tempsDeplacement = distanceTotaleKm * tempsParKm;
+          const tempsTotal = currentTournee.length * tempsRamassageParArret + tempsDeplacement;
+
+          this.estimationTempsParVelo[currentVelo.idVelo].push(Math.round(tempsTotal));
         }
+
+        distanceParcourue = 0;
       }
+
       currentVeloIndex = (currentVeloIndex + 1) % totalVelos;
     }
 
@@ -139,12 +156,11 @@ export class TourneeComponent implements OnInit {
   }
 
   isSegmentBlocked(startArret: PointInteret, endArret: PointInteret): boolean {
-    return this.incidents.some(incident => {
-      return (
+    return this.incidents.some(
+      incident =>
         (incident.startPoint === startArret.nom && incident.endPoint === endArret.nom) ||
-        (incident.startPoint === endArret.nom && incident.endPoint === startArret.nom)
-      );
-    });
+        (incident.startPoint === endArret.nom && incident.endPoint === startArret.nom),
+    );
   }
 
   goToVeloPage(idVelo: number): void {
@@ -160,5 +176,15 @@ export class TourneeComponent implements OnInit {
     } else {
       console.log('Aucun doublon détecté !');
     }
+  }
+
+  getSaison(): 'ETE' | 'HIVER' {
+    const mois = new Date().getMonth() + 1;
+    return mois >= 5 && mois <= 9 ? 'ETE' : 'HIVER';
+  }
+
+  getAutonomieParSaison(): number {
+    const autonomieBase = 50;
+    return this.saison === 'HIVER' ? autonomieBase * 0.9 : autonomieBase;
   }
 }

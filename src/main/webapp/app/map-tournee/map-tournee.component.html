@@ -1,9 +1,23 @@
 <div class="container">
   <h1>Tournée {{ tourneeIndex + 1 }}</h1>
+
+  <div class="saison-toggle">
+    <span
+      >Saison actuelle : <strong>{{ saison }}</strong></span
+    >
+    <button (click)="toggleSaison()">Passer en {{ saison === 'ETE' ? 'HIVER' : 'ETE' }}</button>
+  </div>
+
+  <div class="infos-tournee">
+    <p>Distance totale : {{ distanceTotale.toFixed(2) }} km</p>
+    <p>Temps estimé : {{ estimationTemps }} minutes</p>
+    <p>Autonomie restante estimée : {{ autonomieRestante.toFixed(2) }} km</p>
+  </div>
+
   <div id="map-tournee" style="height: 600px; width: 100%"></div>
+
   <div class="trajet">
     <h2>Trajet :</h2>
     <p>{{ trajetAffiche }}</p>
-    <p>Distance totale : {{ distanceTotale }} km</p>
   </div>
 </div>

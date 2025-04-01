@@ -22,6 +22,9 @@ export class MapTourneeComponent implements OnInit {
   public incidents: Incident[] = [];
   public trajetAffiche: string = '';
   public distanceTotale: number = 0;
+  public estimationTemps: number = 0;
+  public autonomieRestante: number = 0;
+  public saison: 'ETE' | 'HIVER' = (localStorage.getItem('saison') as 'ETE' | 'HIVER') || this.getDefaultSaison();
 
   constructor(
     private route: ActivatedRoute,
@@ -32,14 +35,23 @@ export class MapTourneeComponent implements OnInit {
   ngOnInit(): void {
     const tourneeData = this.route.snapshot.paramMap.get('tournee');
     this.tournee = tourneeData ? JSON.parse(tourneeData) : [];
-    console.log('Tournée initiale :', this.tournee);
 
     const index = this.route.snapshot.paramMap.get('index');
     this.tourneeIndex = index ? +index : 0;
-    console.log('Index de la tournée :', this.tourneeIndex);
 
     this.initMap();
     this.loadAllArrets();
+  }
+
+  getDefaultSaison(): 'ETE' | 'HIVER' {
+    const mois = new Date().getMonth() + 1;
+    return mois >= 5 && mois <= 9 ? 'ETE' : 'HIVER';
+  }
+
+  toggleSaison(): void {
+    this.saison = this.saison === 'ETE' ? 'HIVER' : 'ETE';
+    localStorage.setItem('saison', this.saison);
+    this.highlightTourneeRoute(); // recalculer
   }
 
   private initMap(): void {
@@ -129,20 +141,14 @@ export class MapTourneeComponent implements OnInit {
       return;
     }
 
-    // Recherche de la déchetterie
     const dechetterie = this.pointsInteret.find(p => p.nom === "Porte d'Ivry");
     if (!dechetterie) {
       console.error('Déchetterie non trouvée.');
       return;
     }
 
-    // Trajet de la déchetterie vers les arrêts de la tournée
-    const route: PointInteret[] = [];
+    const route: PointInteret[] = [dechetterie];
 
-    // Ajouter la déchetterie au début
-    route.push(dechetterie);
-
-    // Ajouter les arrêts de la tournée
     this.tournee.forEach(arret => {
       const point = this.pointsInteret.find(p => p.nom === arret.nom);
       if (point && point.lat !== undefined && point.lng !== undefined) {
@@ -152,37 +158,38 @@ export class MapTourneeComponent implements OnInit {
       }
     });
 
-    // Ajouter la déchetterie à la fin si elle n'est pas déjà présente
     if (route[route.length - 1].nom !== dechetterie.nom) {
       route.push(dechetterie);
     }
 
-    // Vérifier les points valides
     if (route.length < 2) {
       console.error('Pas assez de points valides pour tracer un trajet.');
       return;
     }
 
-    // Afficher le trajet en console pour vérification
-    console.log('Route complète :', route);
-
-    // Affichage du trajet sous forme de texte sans duplication
     this.trajetAffiche = route.map(point => point.nom).join(' -> ');
-    console.log('Trajet affiché :', this.trajetAffiche);
 
-    // Calculer la distance totale en prenant chaque segment de 500m
     this.distanceTotale = 0;
     for (let i = 0; i < route.length - 1; i++) {
       const start = route[i];
       const end = route[i + 1];
-
-      // Utiliser calculateRoute pour obtenir tous les points entre start et end
       const calculatedPath = this.calculateRoute(start, end);
-      this.distanceTotale += (calculatedPath.length - 1) * 0.5; // Chaque segment entre deux points d'intérêt est de 500m
+      this.distanceTotale += (calculatedPath.length - 1) * 0.5;
     }
-    console.log('Distance totale :', this.distanceTotale.toFixed(2), 'km');
 
-    // Tracer chaque segment du trajet
+    const vitesseKmH = 5;
+    const tempsParKm = 60 / vitesseKmH; // 12 min/km
+    const tempsParArret = 1;
+
+    const tempsDeplacement = this.distanceTotale * tempsParKm;
+    const tempsRamassage = this.tournee.length * tempsParArret;
+
+    this.estimationTemps = Math.round(tempsDeplacement + tempsRamassage);
+
+    const autonomieBase = 50;
+    const autonomieReelle = this.saison === 'HIVER' ? autonomieBase * 0.9 : autonomieBase;
+    this.autonomieRestante = autonomieReelle - this.distanceTotale;
+
     this.drawCalculatedRoute(route);
   }
 
@@ -191,22 +198,13 @@ export class MapTourneeComponent implements OnInit {
       const start = route[i];
       const end = route[i + 1];
 
-      console.log(`Calcul du segment : ${start.nom} -> ${end.nom}`);
-
-      // Utiliser calculateRoute pour trouver le chemin entre start et end
       const calculatedPath = this.calculateRoute(start, end);
 
-      if (calculatedPath.length < 2) {
-        console.warn(`Aucun chemin trouvé entre ${start.nom} et ${end.nom}, le segment ne sera pas tracé.`);
-        continue; // Sauter ce segment si aucun chemin n'est trouvé
-      }
+      if (calculatedPath.length < 2) continue;
 
-      // Tracer chaque segment du chemin calculé
       for (let j = 0; j < calculatedPath.length - 1; j++) {
         const segmentStart = calculatedPath[j];
         const segmentEnd = calculatedPath[j + 1];
-
-        console.log(`Tracé du sous-segment : (${segmentStart.lat}, ${segmentStart.lng}) -> (${segmentEnd.lat}, ${segmentEnd.lng})`);
 
         L.polyline(
           [
@@ -253,7 +251,6 @@ export class MapTourneeComponent implements OnInit {
       }
     }
 
-    console.error('Aucun chemin trouvé.');
     return [];
   }
 
@@ -285,9 +282,8 @@ export class MapTourneeComponent implements OnInit {
   private loadIncidents(): void {
     this.incidentService.getActiveIncidents().subscribe(data => {
       this.incidents = data;
-      console.log('Incidents actifs :', this.incidents);
       this.updateBlockedSegments();
-      this.highlightTourneeRoute(); // Mettre à jour la route après le chargement des incidents
+      this.highlightTourneeRoute();
     });
   }
 
@@ -297,7 +293,6 @@ export class MapTourneeComponent implements OnInit {
       const end = this.pointsInteret.find(p => p.nom === incident.endPoint);
 
       if (start && end) {
-        console.log(`Incident entre ${start.nom} et ${end.nom}`);
         L.polyline(
           [
             [start.lat, start.lng],
@@ -308,8 +303,6 @@ export class MapTourneeComponent implements OnInit {
             weight: 4,
           },
         ).addTo(this.map);
-      } else {
-        console.warn(`Incident invalide entre ${incident.startPoint} et ${incident.endPoint}`);
       }
     });
   }
