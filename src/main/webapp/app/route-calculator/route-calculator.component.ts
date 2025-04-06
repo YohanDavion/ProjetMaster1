@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ArretService, PointInteret } from '../arret.service';
 import { routes } from '../points-interet';
+import { IncidentService } from '../incident/incident.service';
+import { Incident } from '../incident/incident.model';
 
 @Component({
   standalone: true,
@@ -19,15 +21,20 @@ export class RouteCalculatorComponent implements OnInit, AfterViewInit {
   private allPolylines: L.Polyline[] = [];
   public pointsInteret: PointInteret[] = [];
   public roadsVisible = true;
+  private activeIncidents: Incident[] = [];
 
   public startPoint: PointInteret | null = null;
   public endPoint: PointInteret | null = null;
 
-  constructor(private arretService: ArretService) {}
+  constructor(
+    private arretService: ArretService,
+    private incidentService: IncidentService,
+  ) {}
 
   ngOnInit(): void {
     this.initMap();
     this.loadPointsInteret();
+    this.loadActiveIncidents();
   }
 
   ngAfterViewInit(): void {
@@ -139,7 +146,46 @@ export class RouteCalculatorComponent implements OnInit, AfterViewInit {
     }
   }
 
+  private loadActiveIncidents(): void {
+    this.incidentService.getActiveIncidents().subscribe({
+      next: (incidents: Incident[]) => {
+        this.activeIncidents = incidents;
+      },
+      error: err => console.error('Erreur lors du chargement des incidents actifs:', err),
+    });
+  }
+
+  private isPointBlocked(pointName: string): boolean {
+    return this.activeIncidents.some(
+      incident =>
+        (incident.startPoint === pointName && incident.endPoint === pointName) ||
+        incident.startPoint === pointName ||
+        incident.endPoint === pointName,
+    );
+  }
+
+  private getAllNeighbors(pointName: string): string[] {
+    let neighbors: string[] = [];
+    for (const route in routes) {
+      if (routes[route].includes(pointName)) {
+        const index = routes[route].indexOf(pointName);
+        if (index > 0 && !this.isPointBlocked(routes[route][index - 1])) {
+          neighbors.push(routes[route][index - 1]);
+        }
+        if (index < routes[route].length - 1 && !this.isPointBlocked(routes[route][index + 1])) {
+          neighbors.push(routes[route][index + 1]);
+        }
+      }
+    }
+    return neighbors;
+  }
+
   public calculateRoute(start: PointInteret, end: PointInteret): void {
+    if (this.isPointBlocked(start.nom) || this.isPointBlocked(end.nom)) {
+      alert("Le point de départ ou d'arrivée est actuellement bloqué par un incident.");
+      return;
+    }
+
     const queue: string[][] = [[start.nom]];
     const visited: Set<string> = new Set();
 
@@ -165,23 +211,7 @@ export class RouteCalculatorComponent implements OnInit, AfterViewInit {
       }
     }
 
-    alert('Aucun chemin trouvé entre les points spécifiés.');
-  }
-
-  private getAllNeighbors(pointName: string): string[] {
-    let neighbors: string[] = [];
-    for (const route in routes) {
-      if (routes[route].includes(pointName)) {
-        const index = routes[route].indexOf(pointName);
-        if (index > 0) {
-          neighbors.push(routes[route][index - 1]);
-        }
-        if (index < routes[route].length - 1) {
-          neighbors.push(routes[route][index + 1]);
-        }
-      }
-    }
-    return neighbors;
+    alert('Aucun chemin disponible. Tous les chemins possibles sont bloqués par des incidents.');
   }
 
   private drawRoute(path: string[]): void {
