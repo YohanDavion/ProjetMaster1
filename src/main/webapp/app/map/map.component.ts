@@ -27,6 +27,7 @@ export class MapComponent implements OnInit {
   public pointsInteret: (PointInteret & { lat: number; lng: number })[] = [];
   public velos: Velo[] = [];
   public incidents: Incident[] = [];
+  public newIncident: Incident = { startPoint: '', endPoint: '', blocked: true };
 
   constructor(
     private arretService: ArretService,
@@ -161,16 +162,16 @@ export class MapComponent implements OnInit {
         return;
       }
 
+      // Vérifier si le point de départ ou d'arrivée est bloqué
+      if (this.isPointBlocked(startPoint.nom) || this.isPointBlocked(destination.nom)) {
+        alert("Le point de départ ou d'arrivée est actuellement bloqué par un incident.");
+        return;
+      }
+
       const route = this.calculateRoute(startPoint, destination);
 
-      if (
-        route.some((point, index) => {
-          if (index === route.length - 1) return false;
-          const nextPoint = route[index + 1];
-          return this.isSegmentBlocked([point.lat, point.lng], [nextPoint.lat, nextPoint.lng]);
-        })
-      ) {
-        alert('Impossible de se déplacer : segment bloqué.');
+      if (route.length === 0) {
+        alert('Aucun chemin disponible. Tous les chemins possibles sont bloqués par des incidents.');
         return;
       }
 
@@ -180,13 +181,16 @@ export class MapComponent implements OnInit {
     }
   }
 
-  newIncident: Incident = { startPoint: '', endPoint: '', blocked: true };
+  private isPointBlocked(pointName: string): boolean {
+    return this.incidents.some(
+      incident =>
+        (incident.startPoint === pointName && incident.endPoint === pointName) ||
+        incident.startPoint === pointName ||
+        incident.endPoint === pointName,
+    );
+  }
 
   private calculateRoute(start: PointInteret, end: PointInteret): { lat: number; lng: number }[] {
-    const blockedSegments = this.incidents
-      .filter(incident => incident.blocked)
-      .map(incident => `${incident.startPoint}->${incident.endPoint}`);
-
     const queue: string[][] = [[start.nom]];
     const visited: Set<string> = new Set();
 
@@ -201,9 +205,7 @@ export class MapComponent implements OnInit {
       if (!visited.has(lastNode)) {
         visited.add(lastNode);
 
-        const neighbors = this.getAllNeighbors(lastNode).filter(neighbor => {
-          return !blockedSegments.includes(`${lastNode}->${neighbor}`);
-        });
+        const neighbors = this.getAllNeighbors(lastNode).filter(neighbor => !this.isPointBlocked(neighbor));
 
         for (const neighbor of neighbors) {
           if (!visited.has(neighbor)) {
@@ -213,7 +215,6 @@ export class MapComponent implements OnInit {
       }
     }
 
-    console.error('Aucun chemin trouvé.');
     return [];
   }
 
@@ -260,12 +261,12 @@ export class MapComponent implements OnInit {
         velo.position = position;
         this.updateVeloMarker(velo.idVelo!, position);
 
-        // Vérifier les segments bloqués en cours de déplacement
+        // Vérifier si le prochain point est bloqué
         if (index < path.length - 1) {
-          const nextPosition = path[index + 1];
-          if (this.isSegmentBlocked([position.lat, position.lng], [nextPosition.lat, nextPosition.lng])) {
-            console.warn(`Vélo ${velo.idVelo} bloqué sur un segment interdit.`);
-            alert('Segment bloqué détecté. Déplacement interrompu.');
+          const nextPoint = this.pointsInteret.find(p => p.lat === path[index + 1].lat && p.lng === path[index + 1].lng);
+          if (nextPoint && this.isPointBlocked(nextPoint.nom)) {
+            console.warn(`Vélo ${velo.idVelo} bloqué par un incident sur le point ${nextPoint.nom}`);
+            alert('Point bloqué détecté. Déplacement interrompu.');
             clearInterval(interval);
             return;
           }
