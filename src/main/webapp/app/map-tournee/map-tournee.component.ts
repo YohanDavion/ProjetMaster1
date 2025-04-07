@@ -34,7 +34,27 @@ export class MapTourneeComponent implements OnInit {
 
   ngOnInit(): void {
     const tourneeData = this.route.snapshot.paramMap.get('tournee');
-    this.tournee = tourneeData ? JSON.parse(tourneeData) : [];
+
+    if (tourneeData) {
+      try {
+        const parsedData = JSON.parse(tourneeData);
+        this.tournee = parsedData;
+      } catch (e) {
+        console.error("Erreur lors de l'analyse des données de tournée:", e);
+        this.tournee = [];
+      }
+    }
+
+    // Récupérer les incidents depuis localStorage
+    const incidentsData = localStorage.getItem('active_incidents');
+    if (incidentsData) {
+      try {
+        this.incidents = JSON.parse(incidentsData);
+        console.log('Incidents récupérés depuis localStorage:', this.incidents);
+      } catch (e) {
+        console.error("Erreur lors de l'analyse des incidents:", e);
+      }
+    }
 
     const index = this.route.snapshot.paramMap.get('index');
     this.tourneeIndex = index ? +index : 0;
@@ -96,7 +116,14 @@ export class MapTourneeComponent implements OnInit {
 
       this.addMarkers();
       this.drawAllRoutes();
-      this.loadIncidents(); // Charger et appliquer les incidents
+
+      // Si des incidents ont été récupérés, ne pas les recharger
+      if (this.incidents.length === 0) {
+        this.loadIncidents(); // Charger et appliquer les incidents
+      } else {
+        this.updateBlockedSegments(); // Appliquer directement les incidents récupérés
+        this.highlightTourneeRoute(); // Afficher la tournée
+      }
     });
   }
 
@@ -136,6 +163,18 @@ export class MapTourneeComponent implements OnInit {
   }
 
   private highlightTourneeRoute(): void {
+    // Supprimer l'ancien itinéraire s'il existe
+    if (this.highlightedRoute) {
+      this.map.removeLayer(this.highlightedRoute);
+      this.highlightedRoute = null;
+    }
+    this.allPolylines.forEach(p => {
+      if (this.map.hasLayer(p)) {
+        this.map.removeLayer(p);
+      }
+    }); // Supprimer aussi les routes grises pour la clarté
+    this.allPolylines = [];
+
     if (this.tournee.length < 1) {
       console.warn('Aucune tournée à afficher.');
       return;
@@ -147,34 +186,74 @@ export class MapTourneeComponent implements OnInit {
       return;
     }
 
-    const route: PointInteret[] = [dechetterie];
+    const routePoints: PointInteret[] = [dechetterie];
 
     this.tournee.forEach(arret => {
       const point = this.pointsInteret.find(p => p.nom === arret.nom);
       if (point && point.lat !== undefined && point.lng !== undefined) {
-        route.push(point);
+        routePoints.push(point);
       } else {
-        console.warn(`Point d'intérêt invalide : ${arret.nom}`);
+        console.warn(`Point d'intérêt invalide ou introuvable pour l'affichage: ${arret.nom}`);
       }
     });
 
-    if (route[route.length - 1].nom !== dechetterie.nom) {
-      route.push(dechetterie);
+    if (routePoints[routePoints.length - 1].nom !== dechetterie.nom) {
+      routePoints.push(dechetterie);
     }
 
-    if (route.length < 2) {
+    if (routePoints.length < 2) {
       console.error('Pas assez de points valides pour tracer un trajet.');
       return;
     }
 
-    this.trajetAffiche = route.map(point => point.nom).join(' -> ');
+    this.trajetAffiche = routePoints.map(point => point.nom).join(' -> ');
 
+    let fullPathLatLngs: L.LatLng[] = [];
     this.distanceTotale = 0;
-    for (let i = 0; i < route.length - 1; i++) {
-      const start = route[i];
-      const end = route[i + 1];
+
+    for (let i = 0; i < routePoints.length - 1; i++) {
+      const start = routePoints[i];
+      const end = routePoints[i + 1];
       const calculatedPath = this.calculateRoute(start, end);
-      this.distanceTotale += (calculatedPath.length - 1) * 0.5;
+
+      if (calculatedPath.length > 1) {
+        const segmentLatLngs = calculatedPath.map(p => L.latLng(p.lat, p.lng));
+        fullPathLatLngs = fullPathLatLngs.concat(segmentLatLngs.slice(1)); // Ajouter en évitant les doublons
+
+        // Calculer la distance du segment
+        let segmentDistance = 0;
+        for (let j = 0; j < calculatedPath.length - 1; j++) {
+          segmentDistance += this.getDistance(
+            calculatedPath[j].lat,
+            calculatedPath[j].lng,
+            calculatedPath[j + 1].lat,
+            calculatedPath[j + 1].lng,
+          );
+        }
+        this.distanceTotale += segmentDistance;
+      } else {
+        console.warn(`Impossible de calculer un chemin entre ${start.nom} et ${end.nom} en raison de blocages. Ce segment est ignoré.`);
+        alert(`Attention: Impossible de trouver un chemin entre ${start.nom} et ${end.nom}. L'itinéraire affiché peut être incomplet.`);
+        // On ne peut pas continuer la route si un segment est impossible
+        break;
+      }
+    }
+
+    // S'assurer que le premier point est bien ajouté si la boucle a fonctionné
+    if (fullPathLatLngs.length > 0 || routePoints.length >= 1) {
+      const firstPoint = this.pointsInteret.find(p => p.nom === routePoints[0].nom);
+      if (firstPoint) {
+        fullPathLatLngs.unshift(L.latLng(firstPoint.lat, firstPoint.lng));
+      }
+    }
+
+    if (fullPathLatLngs.length > 1) {
+      this.highlightedRoute = L.polyline(fullPathLatLngs, { color: 'blue', weight: 5 }).addTo(this.map);
+      this.map.fitBounds(this.highlightedRoute.getBounds());
+    } else {
+      console.error("Impossible d'afficher un itinéraire valide.");
+      // On pourrait centrer sur la déchetterie ou le premier point si besoin
+      if (dechetterie) this.map.setView([dechetterie.lat, dechetterie.lng], 14);
     }
 
     const vitesseKmH = 5;
@@ -182,6 +261,7 @@ export class MapTourneeComponent implements OnInit {
     const tempsParArret = 1;
 
     const tempsDeplacement = this.distanceTotale * tempsParKm;
+    // Le nombre d'arrêts à vider est la longueur de `this.tournee`
     const tempsRamassage = this.tournee.length * tempsParArret;
 
     this.estimationTemps = Math.round(tempsDeplacement + tempsRamassage);
@@ -190,68 +270,74 @@ export class MapTourneeComponent implements OnInit {
     const autonomieReelle = this.saison === 'HIVER' ? autonomieBase * 0.9 : autonomieBase;
     this.autonomieRestante = autonomieReelle - this.distanceTotale;
 
-    this.drawCalculatedRoute(route);
-  }
-
-  private drawCalculatedRoute(route: PointInteret[]): void {
-    for (let i = 0; i < route.length - 1; i++) {
-      const start = route[i];
-      const end = route[i + 1];
-
-      const calculatedPath = this.calculateRoute(start, end);
-
-      if (calculatedPath.length < 2) continue;
-
-      for (let j = 0; j < calculatedPath.length - 1; j++) {
-        const segmentStart = calculatedPath[j];
-        const segmentEnd = calculatedPath[j + 1];
-
-        L.polyline(
-          [
-            [segmentStart.lat, segmentStart.lng],
-            [segmentEnd.lat, segmentEnd.lng],
-          ],
-          {
-            color: 'blue',
-            weight: 4,
-          },
-        ).addTo(this.map);
-      }
-    }
+    // drawCalculatedRoute n'est plus nécessaire, l'affichage se fait ici
   }
 
   private calculateRoute(start: PointInteret, end: PointInteret): { lat: number; lng: number }[] {
-    const blockedSegments = this.incidents
-      .filter(incident => incident.blocked)
-      .map(incident => `${incident.startPoint}->${incident.endPoint}`);
+    // Vérifier si les points eux-mêmes sont bloqués
+    if (this.isPointBlocked(start.nom) || this.isPointBlocked(end.nom)) {
+      console.warn(`Un des points ${start.nom} ou ${end.nom} est bloqué.`);
+      return [];
+    }
 
-    const queue: string[][] = [[start.nom]];
+    // Utiliser un algorithme A* pour trouver le chemin le plus court
+    const queue: { path: string[]; priority: number; cost: number }[] = [{ path: [start.nom], priority: 0, cost: 0 }];
     const visited: Set<string> = new Set();
+    const distances: Map<string, number> = new Map();
+    distances.set(start.nom, 0);
+
+    // Heuristique: distance à vol d'oiseau
+    const heuristic = (pointName: string): number => {
+      const pointA = this.pointsInteret.find(p => p.nom === pointName);
+      const pointB = this.pointsInteret.find(p => p.nom === end.nom);
+      if (pointA && pointB) {
+        return this.getDistance(pointA.lat, pointA.lng, pointB.lat, pointB.lng);
+      }
+      return 0; // Retourne 0 si un point est introuvable
+    };
 
     while (queue.length > 0) {
-      const path = queue.shift()!;
-      const lastNode = path[path.length - 1];
+      queue.sort((a, b) => a.priority - b.priority);
+      const { path, cost } = queue.shift()!;
+      const lastNodeName = path[path.length - 1];
 
-      if (lastNode === end.nom) {
-        return this.getLatLngPath(path);
+      if (lastNodeName === end.nom) {
+        return this.getLatLngPath(path); // Chemin trouvé
       }
 
-      if (!visited.has(lastNode)) {
-        visited.add(lastNode);
+      if (!visited.has(lastNodeName)) {
+        visited.add(lastNodeName);
 
-        const neighbors = this.getAllNeighbors(lastNode).filter(neighbor => {
-          return !blockedSegments.includes(`${lastNode}->${neighbor}`);
-        });
+        const neighbors = this.getAllNeighbors(lastNodeName);
+        const lastNodePoint = this.pointsInteret.find(p => p.nom === lastNodeName);
 
-        for (const neighbor of neighbors) {
-          if (!visited.has(neighbor)) {
-            queue.push([...path, neighbor]);
+        if (!lastNodePoint) continue; // Ne devrait pas arriver si les données sont cohérentes
+
+        for (const neighborName of neighbors) {
+          if (!visited.has(neighborName) && !this.isPointBlocked(neighborName)) {
+            const neighborPoint = this.pointsInteret.find(p => p.nom === neighborName);
+            if (!neighborPoint) continue;
+
+            // Coût réel basé sur la distance
+            const segmentDistance = this.getDistance(lastNodePoint.lat, lastNodePoint.lng, neighborPoint.lat, neighborPoint.lng);
+            const newCost = cost + segmentDistance;
+
+            if (newCost < (distances.get(neighborName) || Infinity)) {
+              distances.set(neighborName, newCost);
+              const priority = newCost + heuristic(neighborName);
+              queue.push({
+                path: [...path, neighborName],
+                priority: priority,
+                cost: newCost,
+              });
+            }
           }
         }
       }
     }
 
-    return [];
+    console.warn(`Aucun chemin trouvé entre ${start.nom} et ${end.nom} même en passant par d'autres arrêts.`);
+    return []; // Aucun chemin trouvé
   }
 
   private getLatLngPath(path: string[]): { lat: number; lng: number }[] {
@@ -279,9 +365,34 @@ export class MapTourneeComponent implements OnInit {
     return neighbors;
   }
 
+  private getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Rayon de la Terre en km
+    const dLat = this.deg2rad(lat2 - lat1);
+    const dLon = this.deg2rad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance en km
+    return distance;
+  }
+
+  private deg2rad(deg: number): number {
+    return deg * (Math.PI / 180);
+  }
+
+  private isPointBlocked(pointName: string): boolean {
+    return this.incidents.some(
+      incident =>
+        (incident.startPoint === pointName && incident.endPoint === pointName) ||
+        incident.startPoint === pointName ||
+        incident.endPoint === pointName,
+    );
+  }
+
   private loadIncidents(): void {
-    this.incidentService.getActiveIncidents().subscribe(data => {
-      this.incidents = data;
+    this.incidentService.getActiveIncidents().subscribe((incidents: Incident[]) => {
+      this.incidents = incidents;
       this.updateBlockedSegments();
       this.highlightTourneeRoute();
     });
